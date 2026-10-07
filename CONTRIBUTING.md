@@ -12,4 +12,10 @@ cluster settings outside submitted examples.
 For implementation changes, describe the scientific behavior and its validation
 in a pull request. Preserve links to the source tools and make any changed
 scientific assumptions explicit. The shared engine and per-system interfaces
-will be established through the pilots before source-code consolidation.
+will continue to be established through the pilots. The first imported component
+is the generator; detailed configuration rules are in `docs/generator.md`.
+
+Generator changes must pass the CMake/CTest checks in the README. Keep vendored
+scientific files unchanged unless an intentional scientific change is documented.
+When updating an upstream import, record its commit and imported-file checksums
+in `upstream.json`, preserve its license, and rerun native parity checks.

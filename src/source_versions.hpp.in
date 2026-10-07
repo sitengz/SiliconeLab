@@ -1,0 +1,4 @@
+#pragma once
+inline constexpr const char* oil_commit = "@oil_commit@";
+inline constexpr const char* network_commit = "@network_commit@";
+inline constexpr const char* coating_commit = "@coating_commit@";

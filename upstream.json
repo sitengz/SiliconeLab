@@ -5,19 +5,86 @@
       "repository": "https://github.com/sitengz/Silicone_Oil",
       "candidate_commit": "c7336b13990b51ef66f38d4e50fdb27185ee2e6f",
       "main_commit_observed": "66b00f69b09736e607a18303c4619d5a6c089dc5",
-      "status": "candidate commit merged into main through PR 2 on 2026-10-07"
+      "status": "candidate commit merged into main through PR 2 on 2026-10-07",
+      "integrated_commit": "66b00f69b09736e607a18303c4619d5a6c089dc5",
+      "license": "MIT",
+      "vendored_files": [
+        {
+          "path": "vendor/Silicone_Oil/Generator/oil_generator.cpp",
+          "upstream_path": "Generator/oil_generator.cpp",
+          "sha256": "d646110d67791c572c3697cf8837fc05618fe7ff305150885bffc10f600ff211"
+        },
+        {
+          "path": "vendor/Silicone_Oil/Generator/config_input.hpp",
+          "upstream_path": "Generator/config_input.hpp",
+          "sha256": "292d70866571ad0dc11580073026f90a2c08aa6ae3075c36023b422300aaff34"
+        },
+        {
+          "path": "vendor/Silicone_Oil/LICENSE",
+          "upstream_path": "LICENSE",
+          "sha256": "e776b305688ed30cfa3dc059e6e9732f41a2c65d4d7097ff9dfc4d1d07a4f216"
+        }
+      ]
     },
     "network": {
       "repository": "https://github.com/sitengz/PDMS_Elastomer",
       "candidate_commit": "b67c4cea77893cc9eae41a671193c8b6c201606d",
-      "status": "pushed main baseline; local-only changes have not been checked"
+      "status": "pushed main baseline; local-only changes have not been checked",
+      "integrated_commit": "b67c4cea77893cc9eae41a671193c8b6c201606d",
+      "license": "MIT",
+      "vendored_files": [
+        {
+          "path": "vendor/PDMS_Elastomer/Generator/pdms_elastomer_generator.cpp",
+          "upstream_path": "Generator/pdms_elastomer_generator.cpp",
+          "sha256": "36d9664a5e59c56763673e1419c11e7fd7f999b6b75f2019ca208a428ce92111"
+        },
+        {
+          "path": "vendor/PDMS_Elastomer/Generator/pdms_filler_component.hpp",
+          "upstream_path": "Generator/pdms_filler_component.hpp",
+          "sha256": "e2ecd8ba558d8801c0d1d68cc2a2a34c77abcbc7b486472ce1a1b5f43cecef5d"
+        },
+        {
+          "path": "vendor/PDMS_Elastomer/LICENSE",
+          "upstream_path": "LICENSE",
+          "sha256": "e776b305688ed30cfa3dc059e6e9732f41a2c65d4d7097ff9dfc4d1d07a4f216"
+        }
+      ]
     },
     "coating": {
       "repository": "https://github.com/sitengz/Silicone_Coating",
       "candidate_commit": "169ad4f8a3cb5bb0d205c576e1a1897bd2d63430",
       "source_commit": "581e1759472c62a886f798182ba51fc5b0f0a4d7",
-      "status": "main tracked files match source commit after PR 7"
+      "status": "main tracked files match source commit after PR 7",
+      "integrated_commit": "169ad4f8a3cb5bb0d205c576e1a1897bd2d63430",
+      "license": "MIT",
+      "vendored_files": [
+        {
+          "path": "vendor/Silicone_Coating/V22/v22_generator.cpp",
+          "upstream_path": "V22/v22_generator.cpp",
+          "sha256": "56cedc3727bc809b6d601881a75a4b432cade54a1f69644771d014be0500d369"
+        },
+        {
+          "path": "vendor/Silicone_Coating/V35/v35_generator.cpp",
+          "upstream_path": "V35/v35_generator.cpp",
+          "sha256": "53f95ef84266c49e3d312fa69b0e70a79b2d8e67d934f7cb5322d9d379502b59"
+        },
+        {
+          "path": "vendor/Silicone_Coating/Formulation/config_input.hpp",
+          "upstream_path": "Formulation/config_input.hpp",
+          "sha256": "292d70866571ad0dc11580073026f90a2c08aa6ae3075c36023b422300aaff34"
+        },
+        {
+          "path": "vendor/Silicone_Coating/Formulation/silicone_oil_component.hpp",
+          "upstream_path": "Formulation/silicone_oil_component.hpp",
+          "sha256": "e3ba6afd6f45d8c011b43ff180ef3b3ccbc427bd0e6e9f8ea2394296a203f8f7"
+        },
+        {
+          "path": "vendor/Silicone_Coating/LICENSE",
+          "upstream_path": "LICENSE",
+          "sha256": "e776b305688ed30cfa3dc059e6e9732f41a2c65d4d7097ff9dfc4d1d07a4f216"
+        }
+      ]
     }
   },
-  "license_audit": "pending before source-code import"
+  "license_audit": "All three imported sources carry the MIT License; original LICENSE files and notices are preserved."
 }
