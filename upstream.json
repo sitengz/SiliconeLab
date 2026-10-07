@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "sources": {
+    "oil": {
+      "repository": "https://github.com/sitengz/Silicone_Oil",
+      "candidate_commit": "c7336b13990b51ef66f38d4e50fdb27185ee2e6f",
+      "main_commit_observed": "66b00f69b09736e607a18303c4619d5a6c089dc5",
+      "status": "candidate commit merged into main through PR 2 on 2026-10-07"
+    },
+    "network": {
+      "repository": "https://github.com/sitengz/PDMS_Elastomer",
+      "candidate_commit": "b67c4cea77893cc9eae41a671193c8b6c201606d",
+      "status": "pushed main baseline; local-only changes have not been checked"
+    },
+    "coating": {
+      "repository": "https://github.com/sitengz/Silicone_Coating",
+      "candidate_commit": "169ad4f8a3cb5bb0d205c576e1a1897bd2d63430",
+      "source_commit": "581e1759472c62a886f798182ba51fc5b0f0a4d7",
+      "status": "main tracked files match source commit after PR 7"
+    }
+  },
+  "license_audit": "pending before source-code import"
+}

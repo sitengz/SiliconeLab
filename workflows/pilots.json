@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "pilots": [
+    {
+      "id": "oil-n16-pdi1",
+      "module": "oil",
+      "source_config": "simulations/N16_PDI1/model.conf",
+      "property": "surface_tension",
+      "analysis_baseline": "existing MATLAB film surface-tension protocol",
+      "status": "configuration and commands require inspection"
+    },
+    {
+      "id": "network-n40-linear",
+      "module": "network",
+      "source_config": null,
+      "property": "conversion_and_surface_profiles",
+      "status": "exact existing case and commands require selection"
+    },
+    {
+      "id": "coating-v22-oil",
+      "module": "coating",
+      "source_config": "simulations/V22/PDMS_N30_10wt/model.conf",
+      "property": null,
+      "status": "candidate case; supported analysis property requires selection"
+    }
+  ]
+}

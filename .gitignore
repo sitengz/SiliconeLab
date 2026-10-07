@@ -1,0 +1,15 @@
+# Runtime data and machine-specific settings
+__pycache__/
+*.py[cod]
+.venv/
+build/
+runs/
+results/
+downloads/
+profiles/local/
+.env
+.env.*
+!.env.example
+*.log
+*.key
+*.pem

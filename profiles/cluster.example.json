@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "enabled": false,
+  "connection": {
+    "ssh_alias": null,
+    "authentication_method": null,
+    "vpn_required": null,
+    "interactive_mfa_required": null,
+    "unattended_access_allowed": null
+  },
+  "scheduler": {
+    "type": "slurm",
+    "account": null,
+    "partition": null,
+    "remote_work_directory": null,
+    "modules": []
+  },
+  "limits": {
+    "max_concurrent_jobs": null,
+    "max_nodes_per_job": null,
+    "max_wall_time_hours": null,
+    "max_retries": 0
+  },
+  "authorized_actions": {
+    "connect": false,
+    "write_remote_files": false,
+    "submit": false,
+    "monitor": false,
+    "download": false,
+    "resume": false,
+    "extend_sampling": false
+  }
+}
