@@ -18,3 +18,6 @@ directory must be new. Edit `output_dir` for another run.
 See `../docs/generator.md` for configuration details. Larger candidate production
 pilots remain recorded in `../workflows/pilots.json` and require separate
 simulation and analysis validation.
+
+The four [full-size follow-up configurations](full-size/README.md) reproduce
+existing production cases after the small Nova jobs pass their completion checks.
