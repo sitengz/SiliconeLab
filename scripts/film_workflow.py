@@ -655,6 +655,51 @@ def monitor():
             + " outputs_verified="
             + str(item.get("outputs_verified", False))
         )
+    for key, item in state.get("analysis_jobs", {}).items():
+        job = item["job_id"]
+        raw = subprocess.check_output(
+            [
+                "sacct",
+                "-j",
+                job,
+                "-n",
+                "-P",
+                "--format=JobIDRaw,State,ExitCode,Elapsed",
+            ],
+            text=True,
+        )
+        row = next(
+            (r.split("|") for r in raw.splitlines() if r.startswith(job + "|")), None
+        )
+        if not row:
+            continue
+        item.update(
+            state=row[1], exit_code=row[2], elapsed=row[3], last_checked_at=now()
+        )
+        report = rootpath(item["output_directory"]) / "analysis.json"
+        if row[1] == "COMPLETED" and row[2] == "0:0":
+            if report.exists():
+                data = load(report)
+                item["outputs_verified"] = data.get("status") == "complete"
+                item["observable_statuses"] = {
+                    r["analysis"]: r["status"] for r in data.get("analyses", [])
+                }
+            else:
+                item.update(
+                    outputs_verified=False, verification_error="Missing analysis.json"
+                )
+        print(
+            "SUMMARY: "
+            + key
+            + " job "
+            + job
+            + " "
+            + row[1]
+            + " exit "
+            + row[2]
+            + " outputs_verified="
+            + str(item.get("outputs_verified", False))
+        )
     save(STATE, state)
 
 
