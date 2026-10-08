@@ -7,8 +7,10 @@ or `coating` in a saved configuration. It reuses the original scientific
 generators and writes a common run package with configuration and source records.
 
 The structural analyzer accepts an equilibrated data snapshot and its matching
-info file for oil, elastomer and V22/V35 coating systems. Persistent workflow
-execution and an optional AI interface are subsequent milestones.
+info file for oil, elastomer and V22/V35 coating systems. Generalized part 2
+and part 3 analyzers cover spatial/dynamic and surface/mechanical properties,
+with explicit applicability and sampling checks. The four reference cases
+exercise the shared tools; future simulation batches belong under `runs/`.
 
 ## Generate a system
 
@@ -87,20 +89,71 @@ establish equilibration or convergence.
 
 ## Layout
 
-- `workflows/`: system-specific workflow specifications and pilot records.
+- `workflows/`: published reference workflow specifications and pilot records.
 - `profiles/`: example cluster settings; real credentials stay outside the repository.
 - `docs/`: architecture, operating permissions, and pilot acceptance criteria.
-- `src/`: C++ generator/analysis backends and the Python analysis controller.
+- `src/`: generalized C++ generator/analysis backends and Python analysis controllers.
+- `scripts/`: preparation, submission, verification and analysis orchestration.
 - `vendor/`: unchanged scientific sources with their original MIT licenses.
 - `upstream.json`: pinned source versions and imported-file checksums.
 - `engine/`: reserved for persistent workflow execution and job records.
 - `modules/`: scientific integration notes.
-- `examples/`: small configurations for oil, elastomer, V22, and V35.
+- `examples/`: four reference cases: oil, elastomer, V22 and V35, with small,
+  full-size bulk and matched-film configurations.
+- `runs/`: ignored, batch-specific configurations, inputs, job records, trajectories
+  and analysis reports for future simulations.
 - `tests/`: scientific contract and parity checks against native programs.
 
 The existing repositories remain the scientific implementation sources. Imported
 generator files retain their contents, attribution, licenses, and links to their
 original commit history.
+
+## Shared software and future runs
+
+GitHub contains the reusable generator, all three analyzer entry points,
+workflow scripts, documentation, tests and four reference cases. The four cases
+are reproducible examples for other users to test the tools, rather than a limit
+on the configurations the tools support. Large simulation outputs, credentials
+and machine-specific state are excluded from Git.
+
+Keep reference configurations in `examples/` stable. For a future scientific
+batch, copy the relevant example into a new directory under `runs/` and record
+its approved settings there. Use a unique batch and case name:
+
+```text
+runs/<batch>/
+  workflow.json                 # approved cases, stages, resources and outputs
+  workflow-state.json           # accepted job IDs and monitoring state
+  <case>/
+    configs/model.conf          # complete approved system configuration
+    generated/                  # generator package and provenance
+    surface/                    # stage inputs, Slurm output and simulation output
+    dynamics/
+    tensile-x/                  # only when applicable
+    tensile-y/
+    analysis/part1/
+    analysis/part2/
+    analysis/part3/
+```
+
+This is the directory convention for new batches, not a new command-line API.
+The existing reference film controller currently uses `workflows/films.json`
+and `runs/film-workflow.json`; active reference jobs retain those paths. A future
+batch must use its own plan and state paths before submission so it cannot
+reuse the reference batch's job records.
+
+The generator resolves `output_dir` relative to the configuration file and
+requires a new output directory. For the layout above, use
+`output_dir = ../generated` inside `configs/model.conf`. Preserve the submitted
+configuration, code revision, seeds, checksums, dependency records and analysis
+requirements with each run. Submit from each stage's directory and keep its
+Slurm stdout/stderr there. On Nova, dated activity summaries remain in the
+central log directory.
+
+Only promote a future case into `examples/` deliberately, after documenting
+its purpose and validation. Changes to shared scientific code, workflow logic,
+analysis or documentation still belong in GitHub. See
+[the example guide](examples/README.md) for copying a reference configuration.
 
 ## Development status
 
