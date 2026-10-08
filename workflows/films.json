@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "authorization": "User requested four matched films, independent part3 simulations, dependency logic, submission, and two analyzers on 2026-10-08.",
+  "resources": {
+    "nodes": 1,
+    "ntasks": 96,
+    "memory": "200G",
+    "time": "48:00:00",
+    "account": "wxia",
+    "partition": "nova"
+  },
+  "cases": [
+    {
+      "id": "oil-n16-pdi1-film-full",
+      "system": "oil",
+      "config": "examples/films/oil.conf",
+      "run_directory": "runs/oil-n16-pdi1-film-full",
+      "bulk_run": "runs/oil-n16-pdi1-full",
+      "bulk_job_id": "16765311",
+      "atoms": 100000,
+      "thickness_A": 231.32564,
+      "thickness_convention": "bulk-derived oil slab"
+    },
+    {
+      "id": "elastomer-n40-film-full",
+      "system": "elastomer",
+      "config": "examples/films/elastomer.conf",
+      "run_directory": "runs/elastomer-n40-film-full",
+      "bulk_run": "runs/elastomer-n40-full",
+      "bulk_job_id": "16765312",
+      "atoms": 168000,
+      "thickness_A": 182.84904,
+      "thickness_convention": "4 times mean active bulk strand Ree; nominal wall-free material"
+    },
+    {
+      "id": "coating-v22-pdms-n30-film-full",
+      "system": "coating",
+      "config": "examples/films/coating-v22.conf",
+      "run_directory": "runs/coating-v22-pdms-n30-film-full",
+      "bulk_run": "runs/coating-v22-pdms-n30-full",
+      "bulk_job_id": "16765313",
+      "atoms": 136020,
+      "thickness_A": 250.50877512658496,
+      "thickness_convention": "matched measured bulk Lz; native initial box height"
+    },
+    {
+      "id": "coating-v35-copolymer-n15-film-full",
+      "system": "coating",
+      "config": "examples/films/coating-v35.conf",
+      "run_directory": "runs/coating-v35-copolymer-n15-film-full",
+      "bulk_run": "runs/coating-v35-copolymer-n15-full",
+      "bulk_job_id": "16765314",
+      "atoms": 136785,
+      "thickness_A": 250.50142098964878,
+      "thickness_convention": "matched measured bulk Lz; native initial box height"
+    }
+  ],
+  "sampling": {
+    "surface_equilibration_ns": 50,
+    "surface_production_ns": 50,
+    "dynamics_equilibration_ns": 5,
+    "debye_waller_ps": 100,
+    "debye_waller_every_ps": 0.1,
+    "long_dynamics_ns": 25,
+    "long_dynamics_early_every_ps": 5,
+    "long_dynamics_late_every_ps": 25,
+    "tensile_equilibration_ns": 5,
+    "tensile_strain_rate_per_fs": 2e-09,
+    "tensile_max_engineering_strain": 0.2,
+    "tensile_axes": [
+      "x",
+      "y"
+    ]
+  }
+}
