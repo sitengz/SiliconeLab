@@ -23,6 +23,11 @@
           "path": "vendor/Silicone_Oil/LICENSE",
           "upstream_path": "LICENSE",
           "sha256": "e776b305688ed30cfa3dc059e6e9732f41a2c65d4d7097ff9dfc4d1d07a4f216"
+        },
+        {
+          "path": "vendor/Silicone_Oil/Analysis/atsc4i.py",
+          "upstream_path": "Analysis/atsc4i.py",
+          "sha256": "5307d483368778166d01ee9dc1c520cea9e5e0ff6e67c4b6df498dd2f7716939"
         }
       ]
     },
@@ -62,6 +67,11 @@
           "path": "vendor/PDMS_Elastomer/Analysis/topology_analyzer.cpp",
           "upstream_path": "Analysis/topology_analyzer.cpp",
           "sha256": "043e2696ea62eaa4f97292846402ff0c4c6f7ed7f4852a151ec4dc4d3c135977"
+        },
+        {
+          "path": "vendor/PDMS_Elastomer/Analysis/network_profile_analyzer.cpp",
+          "upstream_path": "Analysis/network_profile_analyzer.cpp",
+          "sha256": "20ae59c522a085a7731095ee1038bad777dacfcd4020005276cb07194dc3a96b"
         }
       ]
     },
@@ -97,6 +107,11 @@
           "path": "vendor/Silicone_Coating/LICENSE",
           "upstream_path": "LICENSE",
           "sha256": "e776b305688ed30cfa3dc059e6e9732f41a2c65d4d7097ff9dfc4d1d07a4f216"
+        },
+        {
+          "path": "vendor/Silicone_Coating/Analysis/phase_separation_analyzer.cpp",
+          "upstream_path": "Analysis/phase_separation_analyzer.cpp",
+          "sha256": "9ac955e4e29f2a8bf7c5bb3b054969b6fe3d4ac5f1f1a3bc3133946e6f34be7a"
         }
       ]
     }

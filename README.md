@@ -71,8 +71,10 @@ The first milestone is one validated workflow from each source repository:
 
 The four small examples and four full-size bulk configurations have completed
 on Nova through private local orchestration profiles. A portable persistent
-submission and monitoring controller remains a subsequent milestone. Surface
-and film workflows require separate simulation stages and acceptance checks.
+submission and monitoring controller remains a subsequent milestone. Matched films and dependent surface, dynamics and tensile stages are defined in
+[the film workflow](workflows/films.json), with persistent accepted-job records
+and output gates. See [parts 2 and 3](docs/analysis-parts-2-3.md) for analysis inputs
+and the two generalized analyzer commands.
 
 ## Planned workflow
 
@@ -102,7 +104,9 @@ original commit history.
 
 ## Development status
 
-Local generation and static structural analysis are implemented. Nova pilots
+Local generation and structural, spatial/dynamic, surface and tensile analysis
+controllers are implemented. Film properties retain explicit applicability and
+sampling/geometry quality checks. Nova pilots
 have completed four small and four full-size bulk simulations using private
 local orchestration profiles. Retrieval, a portable persistent controller,
 recovery and the AI interface remain future work.

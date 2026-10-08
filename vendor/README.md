@@ -5,7 +5,8 @@ These files are copied without modifications from the pinned commits in
 record also lists original paths and SHA-256 checksums for every imported file.
 
 Generator sources and their required headers are imported, along with the pinned
-elastomer basic-network and topology analyzers and common header. Simulation
+elastomer basic-network, topology and network-profile analyzers and common header,
+the coating chemical-phase analyzer and the oil ATSC4i reconstruction. Simulation
 outputs, cluster credentials, external Z1+ software and source Git histories are
 not copied. The upstream links preserve access to development history.
 

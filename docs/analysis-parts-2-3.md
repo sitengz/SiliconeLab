@@ -90,3 +90,76 @@ Monitoring and analysis distinguish completion from scientific quality. Full sta
 must contain their completion marker and required output contracts. The hourly monitor
 reports failures, output verification issues and completions, and remains quiet when
 there is no meaningful change.
+
+## Two generalized analyzers
+
+Build/install with CMake. `siliconelab_part2` uses the same normalized metadata and
+C++ snapshot validation as part 1, a streaming C++ trajectory backend, the pinned
+network profile backend, and the pinned coating chemical-phase analyzer when
+applicable. NumPy computes operational component composition fields and grid FFTs.
+`siliconelab_part3` reads the independent property tables and optional original
+chain sequences. Both emit `analysis.json`, detailed tables and a readable `report.md`.
+
+```bash
+siliconelab_part2 data.dynamics_final CASE.info --geometry film \
+  --trajectory dump.layer_dynamics.lammpstrj \
+  --dw-trajectory dump.debye_waller.lammpstrj --output-dir analysis-part2
+
+siliconelab_part3 CASE.info --geometry film \
+  --pressure-production pressure.production.dat --pressure-equil pressure.equil.dat \
+  --tensile-x ../tensile-x/stress_strain.dat \
+  --tensile-y ../tensile-y/stress_strain.dat \
+  --material-thickness-A NOMINAL_THICKNESS \
+  --initial-data ../data.CASE --geometry-data data.surface_production \
+  --part2-report ../analysis-part2/analysis.json --output-dir analysis-part3
+```
+
+The oil's native film pressure filenames differ and are mapped by the analysis
+runner. Oil has no tensile inputs. The original generated data is retained for
+sequence extraction; final reacted atom types must not be used to infer precursor
+functional-group sequence.
+
+Part 2 defaults to up to 16 sampled origins separated by 100 trajectory frames.
+It pools only exact recorded timestep differences, accepts nonuniform sampling,
+uses mass-weighted whole-system COM drift removal, and reports beads separately
+from mass-weighted molecular COM. Layer assignment is relative to material COM at
+each origin. Diffusion slope fits use 50–90% of the observed duration and remain
+preliminary. Global and layer fixed-lag tables use 10 ns and 10 ps; inverse-u2 and
+layer/global displacement ratios are included. These origins are correlated, so
+an independent-replica uncertainty is not inferred.
+
+Generic component segregation uses mass fraction; DMS/MPS chemistry uses one
+backbone marker per repeat. Coarse-grid FFT intensity and the independent-label
+noise estimate are explicitly labelled; they are not substituted for the native
+chemical concentration-spectrum definition. Both 3D and XY tables are saved.
+The lowest-q peak is flagged as box limited. Contact clusters are operational,
+with an explicit cutoff, and do not by themselves prove phase separation.
+Static fields are single-snapshot measurements; time-averaged structure/coarsening
+requires analyzing multiple snapshots and reporting their time windows.
+
+Surface/core regions are obtained from a smoothed total density half-maximum
+crossing rather than simulation-cell edges. An unresolved vacuum interval or
+multiple disconnected material intervals is reported as insufficient geometry.
+Native wall-coordinate network summary tables remain auxiliary after wall release.
+Native network conversion, defect and chain geometry profiles retain their own
+assignment definitions. Z1 spatial import needs separately validated contour/box
+mapping; mixed network/oil primitive-path output is never blindly interpreted as
+network-only output.
+
+Part 3 separates phase clocks, checks monotonic times and zero guard-wall forces,
+uses nonoverlapping completed blocks, and reports block SEM, an approximate normal
+95% interval, and drift. Surface plots require Matplotlib. Tensile reporting fits
+stress difference over 0–5% engineering strain and separately reports a
+model-dependent reduced-strain fit. Neither is automatically labelled Young's
+modulus. Film stress uses a stated nominal material-volume correction.
+
+ATSC4i uses the unchanged native reconstruction with RDKit/Mordred, caches repeated
+sequences, and reports each sequence's chain multiplicity. Its provisional end-group
+assumption is explicit. Install NumPy/Matplotlib from `requirements-analysis.txt`;
+optional descriptor dependencies are RDKit and `mordredcommunity`. Missing packages
+are reported, never replaced by invented descriptor values.
+
+Part 3 cross-checks a correlated part-2 report against the exact source metadata
+hash. Its surface status also requires resolved vacuum/material interfaces in the
+surface final snapshot. A final snapshot check does not establish film integrity
+throughout production; the saved geometry trajectory remains required evidence.
