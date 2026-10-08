@@ -1,0 +1,4 @@
+# Part2 array/FFT summaries. C++ handles snapshots and streaming trajectories.
+numpy>=1.21
+# ATSC4i is optional and requires the separately documented RDKit/Mordred stack.
+matplotlib>=3.4

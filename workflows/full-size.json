@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "status": "prepared; wait for verified small-example completion before publishing and submitting",
+  "prerequisite_job_ids": [
+    "16762883",
+    "16762884",
+    "16762885",
+    "16762886"
+  ],
+  "prerequisite": "All four small jobs COMPLETED with exit 0:0 and outputs_verified=true in the Nova monitor snapshot. Failure or missing outputs blocks submission.",
+  "resources": {
+    "account": "wxia",
+    "partition": "nova",
+    "nodes": 1,
+    "ntasks": 96,
+    "cpus_per_task": 1,
+    "memory": "200G",
+    "time_limit": "48:00:00"
+  },
+  "max_independent_jobs": 8,
+  "monitor_interval_minutes": 60,
+  "scientific_input_shortening_allowed": false,
+  "additional_film_jobs_authorized": false,
+  "cases": [
+    {
+      "id": "oil-n16-pdi1-full",
+      "config": "examples/full-size/oil.conf",
+      "system": "oil",
+      "model": null,
+      "source_repository": "sitengz/Silicone_Oil",
+      "source_config": "simulations/N16_PDI1/model.conf",
+      "source_config_sha256": "68ec6017a3535c7a7cda48ea708510e1d8a9346cc9e27be60b9f6e622a84c8e5",
+      "generator_source_commit": "66b00f69b09736e607a18303c4619d5a6c089dc5",
+      "config_sha256": "1b74584f1465c2ac5ce33e73aa3bdab4274f3c16e192e6282eb943be41a98b39",
+      "run_directory": "runs/oil-n16-pdi1-full",
+      "primary_input": "in.oil-n16-pdi1-full",
+      "final_data": "data.oil-n16-pdi1-full.npt_eq",
+      "required_msd_trajectory": null
+    },
+    {
+      "id": "elastomer-n40-full",
+      "config": "examples/full-size/elastomer.conf",
+      "system": "elastomer",
+      "model": null,
+      "source_repository": "sitengz/PDMS_Elastomer",
+      "source_config": "simulations/02_linear_40_high_xlink/bulk/model.conf",
+      "source_config_sha256": "e58090706d5eaa5305e1c4d0598b3be0b4092fcf4d422a886ab139c907f788a3",
+      "generator_source_commit": "b67c4cea77893cc9eae41a671193c8b6c201606d",
+      "config_sha256": "060136483c7531a4bea72c6d3586f907f592200b85481211e360fbfd7674f743",
+      "run_directory": "runs/elastomer-n40-full",
+      "primary_input": "in.elastomer-n40-full",
+      "final_data": "data.elastomer-n40-full.npt_eq",
+      "required_msd_trajectory": "dump.msd.lammpstrj"
+    },
+    {
+      "id": "coating-v22-pdms-n30-full",
+      "config": "examples/full-size/coating-v22.conf",
+      "system": "coating",
+      "model": "v22",
+      "source_repository": "sitengz/Silicone_Coating",
+      "source_config": "simulations/V22/PDMS_N30_10wt/model.conf",
+      "source_config_sha256": "5bf7f019cbcc20bf066b8d0feaae475a714f129cfd8c8c042c5a4189ed0de462",
+      "generator_source_commit": "169ad4f8a3cb5bb0d205c576e1a1897bd2d63430",
+      "config_sha256": "c4fcf0689309ad6b8ba2e9c9c03624f57a41a78139a4cb1c24a0021b9f0484c6",
+      "run_directory": "runs/coating-v22-pdms-n30-full",
+      "primary_input": "in.coating-v22-pdms-n30-full",
+      "final_data": "data.coating-v22-pdms-n30-full.npt_eq",
+      "required_msd_trajectory": "dump.msd.lammpstrj"
+    },
+    {
+      "id": "coating-v35-copolymer-n15-full",
+      "config": "examples/full-size/coating-v35.conf",
+      "system": "coating",
+      "model": "v35",
+      "source_repository": "sitengz/Silicone_Coating",
+      "source_config": "simulations/V35/Copol_N15_MPS50mol_10wt/model.conf",
+      "source_config_sha256": "d45cd57f85e6422ebfb1fa58360aa1b3ef4c4e695b0a0feeb723c9754951d603",
+      "generator_source_commit": "169ad4f8a3cb5bb0d205c576e1a1897bd2d63430",
+      "config_sha256": "5c3616d9b9a81363eb7b686bd53cbebdf09e719cdd0aa23b692057a6a1fd8b6e",
+      "run_directory": "runs/coating-v35-copolymer-n15-full",
+      "primary_input": "in.coating-v35-copolymer-n15-full",
+      "final_data": "data.coating-v35-copolymer-n15-full.npt_eq",
+      "required_msd_trajectory": "dump.msd.lammpstrj"
+    }
+  ]
+}
