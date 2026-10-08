@@ -172,8 +172,11 @@ def table(path):
 def metrics(path):
     result = {}
     for row in table(path):
+        key = row.get("quantity") or row.get("property") or row.get("key")
+        if not key or key in result:
+            raise ValueError(f"missing or duplicate metric name in {path}")
         v = float(row["value"])
-        result[row.get("quantity", row.get("key"))] = v if math.isfinite(v) else None
+        result[key] = v if math.isfinite(v) else None
     return result
 
 

@@ -137,6 +137,9 @@ class AnalyzerTests(unittest.TestCase):
         _,out=self.analyze(data,info,extra=("--z1-mode","export"))
         report=json.loads((out/"analysis.json").read_text())
         self.assertEqual(report["chemical_network"]["overall_conversion"],1)
+        self.assertEqual(report["network"]["active_strands"],4)
+        self.assertEqual(report["network"]["cycle_rank"],3)
+        self.assertGreater(report["network"]["affine_modulus_estimate"],0)
         self.assertEqual(report["analyses"][10]["chains"],4)
         native=self.root / "native"
         subprocess.run([ARGS.reference_basic,str(data),str(info),"--output-dir",str(native)],check=True,capture_output=True)
