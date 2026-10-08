@@ -128,7 +128,7 @@ def add_stage(state, case, stage, directory, input_name, final, dependencies, re
     save(directory/'stage-metadata.json',dict(item,geometry='film',timestep_fs=5,source_info=state['cases'][case]['source_info'],nominal_material_thickness_A=state['cases'][case]['nominal_thickness_A'],surface_definition='component mass-density half-maximum crossing; never simulation box faces',sampling=load(PLAN)['sampling']))
     state['stages'][key]=item
     script=directory/'submit.sbatch'
-    script.write_text('#!/bin/bash\n#SBATCH --nodes=1\n#SBATCH --ntasks=96\n#SBATCH --mem=200G\n#SBATCH --time=48:00:00\n#SBATCH --account=wxia\n#SBATCH --partition=nova\nset -euo pipefail\nsource /etc/profile\nsource /work/wxia/siteng/log/tools/nova-logging.sh\nmodule purge\nmodule load '+MODULE+'\nexport OMP_NUM_THREADS=1\nnova_run \"Execute and verify film workflow stage\" --summary \"Compute-node stage records inputs, parent checks, LAMMPS completion and output verification in stage-result.json.\" python3 '+shlex.quote(str(ROOT/'scripts/film_workflow.py'))+' run '+shlex.quote(key)+'\n')
+    script.write_text('#!/bin/bash\n#SBATCH --nodes=1\n#SBATCH --ntasks=96\n#SBATCH --mem=200G\n#SBATCH --time=48:00:00\n#SBATCH --account=wxia\n#SBATCH --partition=nova\nset -eo pipefail\nsource /etc/profile\nsource /work/wxia/siteng/log/tools/nova-logging.sh\nmodule purge\nmodule load '+MODULE+'\nexport OMP_NUM_THREADS=1\nnova_run \"Execute and verify film workflow stage\" --summary \"Compute-node stage records inputs, parent checks, LAMMPS completion and output verification in stage-result.json.\" python3 '+shlex.quote(str(ROOT/'scripts/film_workflow.py'))+' run '+shlex.quote(key)+'\n')
 
 
 def prepare():
