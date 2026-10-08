@@ -6,8 +6,9 @@ SiliconeLab provides a C++17 generator selected by `system = oil`, `elastomer`,
 or `coating` in a saved configuration. It reuses the original scientific
 generators and writes a common run package with configuration and source records.
 
-Cluster simulations, output selection, property analysis, and an optional AI
-interface are subsequent milestones.
+The structural analyzer accepts an equilibrated data snapshot and its matching
+info file for oil, elastomer and V22/V35 coating systems. Persistent workflow
+execution and an optional AI interface are subsequent milestones.
 
 ## Generate a system
 
@@ -45,6 +46,19 @@ templates, native scientific metadata, the original and backend configs, and
 Slurm templates still contain the upstream cluster assumptions and need review
 before use on another cluster.
 
+## Analyze a system
+
+```sh
+./build/siliconelab_analyzer data.CASE.npt_eq CASE.info --z1-command /path/to/Z1+
+```
+
+Twelve structural/network analyses are supported. C++17 performs geometry and
+graph calculations; Python 3.9+ coordinates validation, reports and external Z1+.
+The analyzer writes a new output directory and preserves simulation files.
+Network quantities are marked not applicable for uncrosslinked oil. See
+[the analysis guide](docs/analyzer.md) for definitions, component selection,
+Z1 contour mapping, outputs and boundary limitations.
+
 ## Initial scope
 
 The first milestone is one validated workflow from each source repository:
@@ -55,10 +69,10 @@ The first milestone is one validated workflow from each source repository:
 | Network | sitengz/PDMS_Elastomer | Existing N40 linear-network case | Conversion and surface profiles |
 | Coating | sitengz/Silicone_Coating | Existing V22 oil-containing case | Select a property supported by its current analyzer |
 
-Pilot configurations and analysis settings must be checked against the source
-tools before execution. No cluster connection or simulation submission is
-implemented yet. The small generator examples are preparation checks, separate
-from these production pilots.
+The four small examples and four full-size bulk configurations have completed
+on Nova through private local orchestration profiles. A portable persistent
+submission and monitoring controller remains a subsequent milestone. Surface
+and film workflows require separate simulation stages and acceptance checks.
 
 ## Planned workflow
 
@@ -74,13 +88,13 @@ establish equilibration or convergence.
 - `workflows/`: system-specific workflow specifications and pilot records.
 - `profiles/`: example cluster settings; real credentials stay outside the repository.
 - `docs/`: architecture, operating permissions, and pilot acceptance criteria.
-- `src/`: the common C++ generator entry point and backend adapters.
-- `vendor/`: unchanged generator sources with their original MIT licenses.
+- `src/`: C++ generator/analysis backends and the Python analysis controller.
+- `vendor/`: unchanged scientific sources with their original MIT licenses.
 - `upstream.json`: pinned source versions and imported-file checksums.
 - `engine/`: reserved for persistent workflow execution and job records.
 - `modules/`: scientific integration notes.
 - `examples/`: small configurations for oil, elastomer, V22, and V35.
-- `tests/`: parity checks against independently compiled native generators.
+- `tests/`: scientific contract and parity checks against native programs.
 
 The existing repositories remain the scientific implementation sources. Imported
 generator files retain their contents, attribution, licenses, and links to their
@@ -88,11 +102,12 @@ original commit history.
 
 ## Development status
 
-Local generation is implemented. Cluster authentication, submission, monitoring,
-retrieval, analyzers, recovery, and the AI interface remain to be established
-through the three pilots.
+Local generation and static structural analysis are implemented. Nova pilots
+have completed four small and four full-size bulk simulations using private
+local orchestration profiles. Retrieval, a portable persistent controller,
+recovery and the AI interface remain future work.
 
-To run the generator checks (Python 3 is required for testing):
+To run the generator and analyzer checks (Python 3.9+ is required for testing):
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON

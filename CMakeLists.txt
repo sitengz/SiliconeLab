@@ -18,6 +18,12 @@ add_executable(siliconelab_generator
 target_include_directories(siliconelab_generator PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
 install(TARGETS siliconelab_generator RUNTIME DESTINATION bin)
 
+add_executable(siliconelab_static src/analysis/static.cpp)
+add_executable(siliconelab_topology src/analysis/topology.cpp)
+install(TARGETS siliconelab_static siliconelab_topology RUNTIME DESTINATION bin)
+configure_file(src/siliconelab_analyzer.py siliconelab_analyzer COPYONLY)
+install(PROGRAMS src/siliconelab_analyzer.py DESTINATION bin RENAME siliconelab_analyzer)
+
 include(CTest)
 if(BUILD_TESTING)
     find_package(Python3 COMPONENTS Interpreter REQUIRED)
@@ -26,6 +32,13 @@ if(BUILD_TESTING)
     add_executable(reference_elastomer vendor/PDMS_Elastomer/Generator/pdms_elastomer_generator.cpp)
     add_executable(reference_coating_v22 vendor/Silicone_Coating/V22/v22_generator.cpp)
     add_executable(reference_coating_v35 vendor/Silicone_Coating/V35/v35_generator.cpp)
+    add_executable(reference_basic_network vendor/PDMS_Elastomer/Analysis/basic_network_analyzer.cpp)
+    add_test(NAME analyzer_contract
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_analyzer.py"
+        --generator $<TARGET_FILE:siliconelab_generator>
+        --driver "${CMAKE_CURRENT_SOURCE_DIR}/src/siliconelab_analyzer.py"
+        --backend-dir $<TARGET_FILE_DIR:siliconelab_static>
+        --reference-basic $<TARGET_FILE:reference_basic_network>)
     add_test(NAME generator_contract
         COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_generator.py"
         --generator $<TARGET_FILE:siliconelab_generator>

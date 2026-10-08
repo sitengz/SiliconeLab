@@ -47,6 +47,21 @@
           "path": "vendor/PDMS_Elastomer/LICENSE",
           "upstream_path": "LICENSE",
           "sha256": "e776b305688ed30cfa3dc059e6e9732f41a2c65d4d7097ff9dfc4d1d07a4f216"
+        },
+        {
+          "path": "vendor/PDMS_Elastomer/Analysis/network_common.hpp",
+          "upstream_path": "Analysis/network_common.hpp",
+          "sha256": "ae859ef051022028631a6965cf491e310c3e88dae9a722dfb5b04be14350d40f"
+        },
+        {
+          "path": "vendor/PDMS_Elastomer/Analysis/basic_network_analyzer.cpp",
+          "upstream_path": "Analysis/basic_network_analyzer.cpp",
+          "sha256": "274417ddef94e2d4051f222ee23c245ac66e7ae7c9303b52a92627a06a3433fc"
+        },
+        {
+          "path": "vendor/PDMS_Elastomer/Analysis/topology_analyzer.cpp",
+          "upstream_path": "Analysis/topology_analyzer.cpp",
+          "sha256": "043e2696ea62eaa4f97292846402ff0c4c6f7ed7f4852a151ec4dc4d3c135977"
         }
       ]
     },
