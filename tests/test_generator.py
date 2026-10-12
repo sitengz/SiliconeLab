@@ -88,6 +88,22 @@ class GeneratorContract(unittest.TestCase):
                     self.assertEqual(
                         normalize(json.loads(actual), package / "generator.conf", self.root / "unified"),
                         normalize(json.loads(expected), native_config, ref_parent))
+                elif filename.startswith("in.") and filename.endswith((".film", ".surface")):
+                    # The common interface deliberately removes inherited COM
+                    # translation; every other native command must still match.
+                    lines = actual.splitlines(keepends=True)
+                    resets = [i for i, line in enumerate(lines) if line.split() == ["velocity", "all", "zero", "linear"]]
+                    self.assertEqual(len(resets), 1)
+                    reset = resets[0]
+                    first_nvt = next(i for i, line in enumerate(lines) if line.split()[:4] == ["fix", "integrate", "all", "nvt"])
+                    self.assertEqual(reset + 1, first_nvt)
+                    expansion = next(i for i, line in enumerate(lines) if line.split()[:3] == ["change_box", "all", "z"])
+                    self.assertGreater(reset, expansion)
+                    if system == "oil":
+                        initialization = next(i for i, line in enumerate(lines) if line.split() == ["run", "100000"])
+                        self.assertGreater(reset, initialization)
+                    self.assertEqual(lines[reset - 1], "# SiliconeLab: remove inherited COM translation before surface relaxation.\n")
+                    self.assertEqual("".join(lines[:reset - 1] + lines[reset + 1:]), expected)
                 else:
                     self.assertEqual(actual, expected)
 
@@ -97,6 +113,9 @@ class GeneratorContract(unittest.TestCase):
         self.assertEqual(record["status"], "generated")
         self.assertEqual(record["source_config"], config.as_posix())
         self.assertEqual(record["data_file"], "data." + name)
+        momentum_files = [f for f in native_files if f.startswith("in.") and f.endswith((".film", ".surface"))]
+        self.assertEqual(record["surface_momentum_reset"]["input_files"], momentum_files)
+        self.assertEqual(record["surface_momentum_reset"]["command"], "velocity all zero linear")
         self.assertEqual(set(record["generated_files"]), {p.name for p in package.iterdir()})
         self.assertEqual((package / "request.conf").read_bytes(), config.read_bytes())
         source = "network" if system == "elastomer" else system
@@ -139,6 +158,11 @@ class GeneratorContract(unittest.TestCase):
             ("thickness", "30"), ("surface_relax_steps", "1000"),
             ("surface_production_steps", "2000"), ("surface_sample_every", "100")
         ], "coating-surface")
+
+    def test_v35_coating_surface(self):
+        self.parity("coating", "v35", example_entries("coating-v35.conf") + [
+            ("thickness", "30")
+        ], "coating-v35-surface")
 
     def test_invalid_configs_leave_no_package(self):
         cases = [

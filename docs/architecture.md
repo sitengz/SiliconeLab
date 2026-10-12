@@ -6,6 +6,12 @@ scientific backend is compiled separately from unchanged, pinned upstream source
 and linked in-process. The dispatcher removes common keys and passes detailed
 settings through a saved native config. See `generator.md` for the contract.
 
+The common interface adapts generated oil/coating surface inputs by adding a
+single `velocity all zero linear` before surface relaxation, after confinement
+release and guarded preparation. The run manifest records the adapted inputs;
+all other native commands and imported source files retain their original form.
+The matched-film controller applies the same reset to its network surface inputs.
+
 All systems write to the same package convention regardless of their original
 output directory rules. The package preserves requested settings, native resolved
 metadata, backend source version, and generated file inventory. Existing packages

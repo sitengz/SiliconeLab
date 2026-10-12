@@ -55,6 +55,16 @@ its completed bulk data and follows the native molecule-preserving conversion.
 The three network films are independently generated and cured with matching bulk
 compositions/seeds. Cutting a periodic crosslinked network is not used.
 
+New surface inputs remove inherited whole-system translation with
+`velocity all zero linear` once after vacuum expansion and before surface
+relaxation. The oil input does this after its brief guarded lateral preparation;
+the coating inputs and matched network-film controller do it before their first
+surface NVT run. This preserves relative bead velocities and does not recenter
+positions, freeze the film, or periodically remove momentum during production.
+Distant guard walls remain present, so wall-contact and geometry checks are still
+required. Existing submitted inputs and restart checkpoints retain their original
+dynamics.
+
 The elastomer nominal wall-free thickness is 4 times the measured mean active bulk
 strand end-to-end distance (182.84904 Å). Coating thicknesses follow the original
 matched-film convention: measured bulk Lz (250.508775126585 and 250.501420989649 Å).

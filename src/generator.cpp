@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -74,9 +75,41 @@ void write_file(const fs::path& path, const std::string& text) {
     if (!out) throw std::runtime_error("Cannot write output: " + path.string());
 }
 
+std::vector<std::string> reset_surface_momentum(const fs::path& directory,
+                                               const std::string& system) {
+    const std::string name = directory.filename().string();
+    const fs::path input = directory / ("in." + name +
+        (system == "oil" ? ".film" : ".surface"));
+    // Elastomer surface inputs are built by the film workflow. Bulk coating
+    // packages have no surface input; their confined preparation stays native.
+    if (system == "elastomer" || !fs::is_regular_file(input)) return {};
+    std::ifstream source(input);
+    if (!source) throw std::runtime_error("Cannot read surface input: " + input.string());
+    std::string text, line;
+    bool inserted = false;
+    while (std::getline(source, line)) {
+        std::istringstream words(line);
+        std::string command, id, group, style;
+        words >> command >> id >> group >> style;
+        // The first NVT follows vacuum expansion and, for oil, the brief
+        // guarded lateral preparation. Do not reset between sampling phases.
+        if (!inserted && command == "fix" && group == "all" && style == "nvt") {
+            text += "# SiliconeLab: remove inherited COM translation before surface relaxation.\n";
+            text += "velocity all zero linear\n";
+            inserted = true;
+        }
+        text += line + '\n';
+    }
+    if (!source.eof() || !inserted)
+        throw std::runtime_error("Cannot locate surface relaxation in " + input.string());
+    write_file(input, text);
+    return {input.filename().string()};
+}
+
 void write_manifest(const fs::path& directory, const fs::path& config,
                     const std::string& system, const std::string& model,
-                    const Backend& selected, const std::string& data_name) {
+                    const Backend& selected, const std::string& data_name,
+                    const std::vector<std::string>& momentum_inputs) {
     std::vector<std::string> files;
     for (const auto& entry : fs::directory_iterator(directory))
         if (entry.is_regular_file()) files.push_back(entry.path().filename().string());
@@ -91,7 +124,11 @@ void write_manifest(const fs::path& directory, const fs::path& config,
     text += ",\n  \"info_file\": " + json_quote(directory.filename().string() + ".info");
     text += ",\n  \"upstream\": {\n    \"repository\": " + json_quote(selected.repository);
     text += ",\n    \"commit\": " + json_quote(selected.commit) + "\n  },\n";
-    text += "  \"generated_files\": [";
+    text += "  \"surface_momentum_reset\": {\"command\": \"velocity all zero linear\", ";
+    text += "\"timing\": \"once before surface relaxation, after vacuum expansion and guarded preparation\", \"input_files\": [";
+    for (std::size_t i = 0; i < momentum_inputs.size(); ++i)
+        text += (i ? ", " : "") + json_quote(momentum_inputs[i]);
+    text += "]},\n  \"generated_files\": [";
     for (std::size_t i = 0; i < files.size(); ++i)
         text += (i ? ", " : "") + json_quote(files[i]);
     text += "]\n}\n";
@@ -149,7 +186,8 @@ int generate(const fs::path& requested_config) {
         if (code != 0) throw std::runtime_error("Selected generator failed; no run package was retained");
         if (!fs::is_regular_file(directory / data_name))
             throw std::runtime_error("Selected generator did not produce the expected data file");
-        write_manifest(directory, config, system, model, selected, data_name);
+        const auto momentum_inputs = reset_surface_momentum(directory, system);
+        write_manifest(directory, config, system, model, selected, data_name, momentum_inputs);
     } catch (...) {
         // This directory was exclusively created by this call; preexisting runs
         // are rejected above and can never be removed by failure cleanup.

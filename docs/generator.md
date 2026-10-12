@@ -493,6 +493,7 @@ and execution settings are **not additional accepted config keys**:
 | Runtime bond-creation random seed | Network/coating `fix bond/create` uses fixed seed `348154`; `crosslink_seed` instead chooses the initial crosslinker sites. |
 | Runtime bond-creation probability | Elastomer fixed-duration mode: 0.1; elastomer target mode: 0.5; V22: 0.1; V35: 0.5. There is no config key to set the probability independently. |
 | Film wall conventions | Native z-wall models/cutoffs are fixed; oil film padding and coating surface padding are the exposed controls. |
+| Film COM momentum | The common generator adds `velocity all zero linear` once before oil/coating surface relaxation, after vacuum expansion and any brief guarded preparation. The matched-film controller applies the same reset to elastomer/coating surface inputs. Relative bead velocities are preserved; production has no periodic momentum reset. `siliconelab.json` records adapted native input files. |
 | Cluster resources | Inherited Slurm templates contain Nova partition/module/resource assumptions. Host, account, queue, walltime, node/task count, memory, and mail settings are not generator config keys. Cluster profiles are a later integration step. |
 | Analysis and requested properties | Analyzer windows, block sizes, convergence criteria, properties, and tensile/layer-dynamics jobs are outside this generator config. They belong to later simulation/analysis specifications. |
 

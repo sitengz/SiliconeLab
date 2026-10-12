@@ -161,6 +161,10 @@ def pressure_output(filename, label):
 
 def build_surface(path, header, expand):
     text = header + guards(expand)
+    text += (
+        "# Remove inherited COM translation after releasing confinement into vacuum.\n"
+        "velocity all zero linear\n"
+    )
     for phase in ("equil", "production"):
         text += "reset_timestep 0 time 0.0\nfix integrate all nvt temp 300 300 50\n"
         text += pressure_output("pressure." + phase + ".dat", "pressure")

@@ -44,6 +44,19 @@ class FilmContracts(unittest.TestCase):
             self.assertIn("x erate 2e-9", t)
             self.assertIn("run 20000000", t)
 
+    def test_surface_release_removes_momentum_once_before_relaxation(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "in.surface"
+            w.build_surface(p, "read_data ../data.final\n", 50)
+            commands = [line.split() for line in p.read_text().splitlines()]
+            reset = commands.index(["velocity", "all", "zero", "linear"])
+            expand = next(i for i, c in enumerate(commands) if c[:2] == ["change_box", "all"])
+            runs = [i for i, c in enumerate(commands) if c[:1] == ["run"]]
+            self.assertGreater(reset, expand)
+            self.assertLess(reset, runs[0])
+            self.assertEqual(commands.count(["velocity", "all", "zero", "linear"]), 1)
+            self.assertEqual([commands[i] for i in runs], [["run", "10000000"]] * 2)
+
     def test_partial_parent_blocks_children(self):
         with tempfile.TemporaryDirectory() as d:
             old = w.ROOT
