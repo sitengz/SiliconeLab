@@ -89,7 +89,10 @@ def main():
             package = scratch / name
             original = (package / ("in." + name)).read_text()
             output = "data." + name + ".validation_final"
-            text = short_input(original, 20) + "\nwrite_data " + output + " nocoeff\n"
+            # Compression must allow actual relaxation: 20 steps squeezed the
+            # box eightfold in 100 fs and tested an artificial shock instead.
+            # These disposable 100 ps phases never modify production schedules.
+            text = short_input(original, 20000) + "\nwrite_data " + output + " nocoeff\n"
             text = re.sub(r"^read_data\s+data\." + re.escape(name), "read_data " + str(package / ("data." + name)), text, flags=re.M)
             run = execute(scratch / (name + "-formation-smoke"), text, a.lammps)
             count = int(next(line.split()[0] for line in (package / ("data." + name)).read_text().splitlines() if line.endswith(" atoms")))
@@ -111,7 +114,7 @@ def main():
             for axis in "xyz":
                 t = w.tensile_input(original, str(Path(run["directory"]) / output), axis, lam is not None, 2e-8, 1)
                 d = scratch / (name + "-" + axis + "-smoke")
-                r = execute(d, short_input(t, 20), a.lammps)
+                r = execute(d, short_input(t, 10000), a.lammps)
                 atoms, _ = w.snapshot(d / "data.tensile_final", count)
                 error = w.rigidity_error({i: row[2] for i, row in atoms.items() if row[1] == 6}, reference)
                 assert error < 1e-6
