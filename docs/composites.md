@@ -133,7 +133,8 @@ constituent-bead contact distance.
 
 | Key | Default | Meaning |
 |---|---|---|
-| `np_interaction` | `wca` | Convenience default for both channels: `wca` or `lj`. |
+| `np_interaction` | `wca` | Both channels: `wca`, `lj`, or stage-matched `native_pdms`. |
+| `np_lambda` | `1` | Positive finite, dimensionless epsilon multiplier for both NP–NP and NP–matrix pairs in `native_pdms` mode. Values other than `1` require that mode. |
 | `np_np_interaction` | Inherits `np_interaction` | NP–NP constituent pairs. |
 | `np_matrix_interaction` | Inherits `np_interaction` | NP pairs with every matrix type, including oil constituents. |
 | `np_np_epsilon` | `np_epsilon` | Optional independent NP–NP well depth. |
@@ -142,7 +143,10 @@ constituent-bead contact distance.
 | `np_np_cutoff` | `2.5*sigma` for LJ | Explicit angstrom cutoff for NP–NP LJ. Rejected for WCA. |
 | `np_matrix_cutoff` | `2.5*sigma` per pair for LJ | Explicit uniform angstrom cutoff for NP–matrix LJ. Rejected for WCA. |
 
-Explicit channel choices override `np_interaction` regardless of config order.
+For `wca` and `lj`, explicit channel choices override `np_interaction` regardless
+of config order. `native_pdms` rejects independent pair-channel or force-parameter
+overrides; use `np_lambda` to scale both channels while inheriting each native
+stage's sigma, potential and cutoffs.
 WCA uses an energy-shifted LJ potential cut at `2^(1/6)*sigma`; it is purely
 repulsive and reaches zero energy and force at the cutoff. LJ includes the
 attractive tail and shifts energy to zero at its cutoff; an explicit LJ cutoff
@@ -155,7 +159,7 @@ adds half its difference from `6.44584366` to each cross-sigma. This preserves
 the established DMS/MPS cross-interaction factors. NP–NP uses `np_sigma` and
 `np_np_epsilon`. Every resolved pair is recorded in `composite.json`.
 
-NP parameters stay fixed through all matrix temperature stages. Native
+For `wca` and `lj`, NP parameters stay fixed through all matrix temperature stages. Native
 matrix–matrix pairs, bonded terms and reaction rules are unchanged. Internal
 nonbonded pairs within each rigid particle are excluded. For example, keeping
 NP–NP repulsive while adding matrix adhesion requires:
@@ -242,3 +246,35 @@ The subset-temperature NPT warning is expected because pressure is explicitly
 overridden with the whole-composite compute; image-flag warnings can arise from
 new periodic crosslinks. Validation records identify these separately from NP
 rigid-body image consistency.
+
+## Native-PDMS interaction series and bulk tensile workflow
+
+`np_interaction = native_pdms` copies the exact native matrix pair potential,
+sigma and cutoffs in each hot/cold stage. `np_lambda` multiplies epsilon for
+both NP–NP and NP–matrix pairs; matrix–matrix coefficients stay unchanged.
+At lambda one, constituent interactions match native PDMS. NP beads remain
+rigid and nonreactive. The mode rejects independent force-parameter overrides;
+`np_native_stages` records the actual resolved stage coefficients. Placement
+and initial coordinates are identical when only lambda changes.
+
+`tensile_erate` (per fs) and `tensile_strain` must be supplied together and are
+recorded in `siliconelab.json`. The bulk workflow reads these model.conf values
+and generates independent x/y/z inputs using the exact cold formation force
+field. The current series uses 2e-8/fs, strain one, 300 K, independent transverse
+NPT at 1 atm, a 5 fs timestep and a final 5 fs fixed-volume consistency step.
+Stress is tensile-positive: true stress is minus the full composite axial
+pressure in MPa; engineering stress is true stress times instantaneous transverse
+area divided by its initial value. No extra preloading relaxation or velocity
+reset is added to the previously validated NP tensile protocol.
+
+`scripts/bulk_workflow.py` saves the usual batch plan/state, model configs,
+generated packages, formation and tensile stage folders. An explicit compute
+preparation and `scripts/validate_bulk_workflow.py` preflight/smoke gate must pass
+before explicit submission. Formation → x → y → z dependencies serialize each
+case, while all three axes read the same undeformed final formation snapshot.
+Seven cases therefore permit at most seven simultaneous batch jobs. Submission
+checks expanded account queue elements against the eight-independent-job limit,
+saves accepted IDs atomically and refuses duplicate or automatic MD resubmission.
+Each stage pins the executor, checks inputs and parent contracts, and verifies
+full duration/sampling, counts, hashes and rigid NP geometry on its compute node.
+This simulation workflow does not enable unsupported composite Part 2/Part 3.

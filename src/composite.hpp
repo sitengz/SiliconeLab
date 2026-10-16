@@ -32,6 +32,8 @@ struct Options {
     double bead_mass = silicone_oil::kDmsMass;
     double spacing = 0, np_epsilon = 0, matrix_epsilon = 0, matrix_sigma = 0;
     double np_cutoff = 0, matrix_cutoff = 0, packing_distance = 4.5;
+    double lambda = 1;
+    bool native = false;
 };
 inline int integer(const std::string& s) {
     std::size_t end=0;
@@ -64,15 +66,24 @@ inline void option(Options& o, const std::string& key, const std::string& value)
     else if(key == "--np-np-cutoff") o.np_cutoff=number(value);
     else if(key == "--np-matrix-cutoff") o.matrix_cutoff=number(value);
     else if(key == "--np-packing-min-distance") o.packing_distance=number(value);
+    else if(key == "--np-lambda") o.lambda=number(value);
     else throw std::runtime_error("Unknown NP setting: "+key);
 }
 inline void resolve(Options& o) {
     if(o.count<1 || o.count>512) throw std::runtime_error("Composites require np_count in 1..512");
     if(o.representation!="rigid_fcc") throw std::runtime_error("np_representation currently supports rigid_fcc");
+    o.native=o.interaction=="native_pdms";
+    if(o.native) {
+        if(!o.np_interaction.empty() || !o.matrix_interaction.empty() || o.np_epsilon || o.matrix_epsilon ||
+           o.matrix_sigma || o.np_cutoff || o.matrix_cutoff || o.sigma!=silicone_oil::kDmsSigma ||
+           o.epsilon!=silicone_oil::kDmsEpsilon)
+            throw std::runtime_error("native_pdms inherits native stage pair parameters; use np_lambda without pair overrides");
+        o.np_interaction=o.matrix_interaction="native_pdms";
+    } else if(o.lambda!=1) throw std::runtime_error("np_lambda requires np_interaction = native_pdms");
     if(o.np_interaction.empty()) o.np_interaction=o.interaction;
     if(o.matrix_interaction.empty()) o.matrix_interaction=o.interaction;
     for(const auto& mode:{o.interaction,o.np_interaction,o.matrix_interaction})
-        if(mode!="wca" && mode!="lj") throw std::runtime_error("NP interactions must be wca or lj");
+        if(mode!="wca" && mode!="lj" && !(o.native && mode=="native_pdms")) throw std::runtime_error("NP interactions must be wca, lj or native_pdms");
     if((o.np_interaction=="wca" && o.np_cutoff>0) || (o.matrix_interaction=="wca" && o.matrix_cutoff>0))
         throw std::runtime_error("WCA cutoffs are derived at 2^(1/6)*sigma; explicit cutoffs require lj");
     if(o.spacing==0) o.spacing=std::pow(2.0,1.0/6.0)*o.sigma;
@@ -87,6 +98,7 @@ inline Pair pair(const Options& o,int matrix_type,int np_type) {
         : (o.matrix_epsilon>0?o.matrix_epsilon:reference.epsilon*std::sqrt(o.epsilon/silicone_oil::kDmsEpsilon));
     p.sigma=self ? o.sigma : (o.matrix_sigma>0?o.matrix_sigma:reference.sigma+0.5*(o.sigma-silicone_oil::kDmsSigma));
     p.interaction=self?o.np_interaction:o.matrix_interaction;
+    if(o.native) return {reference.epsilon*o.lambda,reference.sigma,15,"native_pdms"};
     const double explicit_cut=self?o.np_cutoff:o.matrix_cutoff;
     const double minimum=std::pow(2.0,1.0/6.0)*p.sigma;
     p.cutoff=p.interaction=="wca" ? minimum : (explicit_cut>0?explicit_cut:2.5*p.sigma);
@@ -185,23 +197,43 @@ inline std::string input(const std::string& native,const Options& o,int np_type,
     std::set<std::string> deformation_fixes;
     const double cut=maximum_cutoff(o,np_type);
     std::string temperature_stop,damping;
+    std::map<int,std::vector<std::string>> native_reference;
     while(std::getline(in,line)) {
         std::istringstream words(line);
         std::vector<std::string> w; std::string word;
         while(words>>word) w.push_back(word);
         if(w.empty()) {out<<line<<'\n'; continue;}
         if(w[0]=="pair_style") {
-            if(w[1]=="lj/cut") {
+            native_reference.clear();
+            if(o.native) {
+                if(w[1]!="lj/cut" && w[1]!="lj/gromacs") throw std::runtime_error("Unsupported native PDMS pair style");
+                out<<line<<'\n'; phase=w[1]=="lj/cut"?"hot":"cold";
+            } else if(w[1]=="lj/cut") {
                 out<<"pair_style hybrid lj/cut "<<w[2]<<" lj/cut "<<cut<<'\n'; phase="hot";
             } else if(w[1]=="lj/gromacs") {
                 out<<"pair_style hybrid lj/gromacs "<<w[2]<<' '<<w[3]<<" lj/cut "<<cut<<'\n'; phase="cold";
             } else throw std::runtime_error("Unsupported native NP pair style");
         } else if(w[0]=="pair_coeff") {
-            out<<"pair_coeff "<<w[1]<<' '<<w[2]<<' '<<(phase=="hot"?"lj/cut 1":"lj/gromacs");
-            for(std::size_t i=3;i<w.size();++i) out<<' '<<w[i]; out<<'\n';
+            if(o.native) {
+                out<<line<<'\n';
+                if(w[1]=="1") native_reference[std::stoi(w[2])]=std::vector<std::string>(w.begin()+3,w.end());
+            } else {
+                out<<"pair_coeff "<<w[1]<<' '<<w[2]<<' '<<(phase=="hot"?"lj/cut 1":"lj/gromacs");
+                for(std::size_t i=3;i<w.size();++i) out<<' '<<w[i]; out<<'\n';
+            }
             if(std::stoi(w[1])==np_type-1 && w[1]==w[2]) {
-                out<<np_coefficients(phase=="hot"?"lj/cut 2":"lj/cut",o,np_type);
-                out<<(phase=="hot"?"pair_modify pair lj/cut 2 shift yes\n":"pair_modify pair lj/cut shift yes\n");
+                if(o.native) {
+                    out<<"# NP pairs inherit this native stage, with epsilon scaled by lambda.\n";
+                    for(int i=1;i<=np_type;++i) {
+                        const auto& coeff=native_reference.at(i==np_type?1:i);
+                        out<<"pair_coeff "<<i<<' '<<np_type<<' '<<std::stod(coeff[0])*o.lambda;
+                        for(std::size_t j=1;j<coeff.size();++j) out<<' '<<coeff[j];
+                        out<<'\n';
+                    }
+                } else {
+                    out<<np_coefficients(phase=="hot"?"lj/cut 2":"lj/cut",o,np_type);
+                    out<<(phase=="hot"?"pair_modify pair lj/cut 2 shift yes\n":"pair_modify pair lj/cut shift yes\n");
+                }
             }
         } else if(w[0]=="comm_modify") {
             out<<"comm_modify cutoff "<<std::max(std::stod(w[2]),o.radius+2*cut)<<'\n';
@@ -263,6 +295,30 @@ inline std::string input(const std::string& native,const Options& o,int np_type,
     if(!velocities) throw std::runtime_error("Missing native integration stages");
     if(base=="elastomer" && !minimization_hold) throw std::runtime_error("Missing native elastomer minimization stage");
     return "# SiliconeLab composite: "+base+" matrix + rigid FCC colloids\n"+out.str();
+}
+
+inline std::string native_stage_metadata(const std::string& text,int np_type) {
+    std::istringstream lines(text);std::string line,style;std::ostringstream out;
+    out<<std::setprecision(17)<<'[';int stages=0,pairs=0;
+    while(std::getline(lines,line)) {
+        std::istringstream words(line);std::vector<std::string>w;std::string token;
+        while(words>>token)w.push_back(token);
+        if(w.empty())continue;
+        if(w[0]=="pair_style") {
+            if(stages) {if(pairs!=np_type)throw std::runtime_error("Incomplete native NP stage pairs");out<<"]},";}
+            style=w[1];pairs=0;++stages;
+            out<<"{\"pair_style\":\""<<style<<"\",\"global_cutoffs_A\":[";
+            for(std::size_t i=2;i<w.size();++i)out<<(i==2?"":",")<<std::stod(w[i]);
+            out<<"],\"pairs\":[";
+        } else if(w[0]=="pair_coeff" && std::stoi(w[2])==np_type) {
+            out<<(pairs++?",":"")<<"{\"type_i\":"<<std::stoi(w[1])<<",\"type_j\":"<<np_type
+               <<",\"epsilon_kcal_mol\":"<<std::stod(w[3])<<",\"sigma_A\":"<<std::stod(w[4])<<",\"pair_cutoffs_A\":[";
+            for(std::size_t i=5;i<w.size();++i)out<<(i==5?"":",")<<std::stod(w[i]);
+            out<<"]}";
+        }
+    }
+    if(stages!=2 || pairs!=np_type)throw std::runtime_error("Expected hot and cold native NP pair stages");
+    out<<"]}]";return out.str();
 }
 
 inline void apply(const fs::path& folder,const Options& o,const std::string& base) {
@@ -439,7 +495,8 @@ inline void apply(const fs::path& folder,const Options& o,const std::string& bas
         <<' '<<a.image[0]<<' '<<a.image[1]<<' '<<a.image[2]<<'\n';
     output<<topology;
     write(data_path,output.str());
-    write(in_path,input(native_input,o,np_type,base));
+    const auto resolved_input=input(native_input,o,np_type,base);
+    write(in_path,resolved_input);
     std::ostringstream metadata; metadata<<std::setprecision(17);
     metadata<<"{\n  \"format\": \"siliconelab-composite-info\",\n  \"format_version\": 1,\n"
         <<"  \"series\": \"composite\",\n  \"base\": \""<<base<<"\",\n  \"geometry\": \"bulk\",\n"
@@ -460,8 +517,11 @@ inline void apply(const fs::path& folder,const Options& o,const std::string& bas
         <<"  \"epsilon_kcal_mol\": "<<o.epsilon<<",\n  \"np_pair_cutoff_A\": "<<pair(o,np_type,np_type).cutoff<<",\n"
         <<"  \"np_np_interaction\": \""<<o.np_interaction<<"\",\n"
         <<"  \"np_matrix_interaction\": \""<<o.matrix_interaction<<"\",\n"
-        <<"  \"np_pair_model\": \"energy-shifted constituent LJ; WCA at the minimum or attractive LJ beyond it\",\n"
-        <<"  \"np_parameter_origin\": \"PDMS-equivalent 300 K reference with explicitly configured overrides\",\n"
+        <<"  \"np_lambda\": "<<o.lambda<<",\n"
+        <<"  \"np_parameter_policy\": \""<<(o.native?"native_stage_matched":"fixed_300K_reference")<<"\",\n"
+        <<"  \"np_native_stages\": "<<(o.native?native_stage_metadata(resolved_input,np_type):"null")<<",\n"
+        <<"  \"np_pair_model\": \""<<(o.native?"native PDMS stage potential, epsilon multiplied by np_lambda":"energy-shifted constituent LJ; WCA at the minimum or attractive LJ beyond it")<<"\",\n"
+        <<"  \"np_parameter_origin\": \""<<(o.native?"Exact native input coefficients; np_native_stages is authoritative":"PDMS-equivalent 300 K reference with explicitly configured overrides")<<"\",\n"
         <<"  \"np_internal_pairs\": \"excluded within each rigid molecule\",\n"
         <<"  \"packing_seed\": "<<o.seed<<",\n  \"box_length_A\": "<<L<<",\n"
         <<"  \"precursor_packing_min_distance_A\": "<<o.packing_distance<<",\n"

@@ -111,7 +111,8 @@ std::vector<std::string> reset_surface_momentum(const fs::path& directory,
 void write_manifest(const fs::path& directory, const fs::path& config,
                     const std::string& system, const std::string& model,
                     const Backend& selected, const std::string& data_name,
-                    const std::vector<std::string>& momentum_inputs,const std::string& base) {
+                    const std::vector<std::string>& momentum_inputs,const std::string& base,
+                    double tensile_rate,double tensile_strain) {
     std::vector<std::string> files;
     for (const auto& entry : fs::directory_iterator(directory))
         if (entry.is_regular_file()) files.push_back(entry.path().filename().string());
@@ -124,6 +125,12 @@ void write_manifest(const fs::path& directory, const fs::path& config,
     text += ",\n  \"request_config\": \"request.conf\",\n  \"backend_config\": \"generator.conf\",";
     text += "\n  \"data_file\": " + json_quote(data_name);
     text += ",\n  \"info_file\": " + json_quote(directory.filename().string() + ".info");
+    if(tensile_rate>0) {
+        std::ostringstream protocol;protocol.precision(17);
+        protocol<<",\n  \"bulk_tensile\": {\"engineering_rate_fs_inverse\":"<<tensile_rate
+                <<",\"target_engineering_strain\":"<<tensile_strain<<",\"timestep_fs\":5,\"temperature_K\":300,\"transverse_pressure_atm\":1}";
+        text+=protocol.str();
+    }
     if (fs::is_regular_file(directory / "nanoparticles.json")) {
         text += ",\n  \"series\": \"composite\",\n  \"composite_file\": \"composite.json\",\n  \"nanoparticles_file\": \"nanoparticles.json\",\n  \"np_template_file\": \"np-template.csv\"";
         text += ",\n  \"base\": "+json_quote(base)+",\n  \"matrix_system\": "+json_quote(base=="elastomer"?"elastomer":"coating");
@@ -146,6 +153,7 @@ int generate(const fs::path& requested_config) {
     const fs::path config = fs::absolute(requested_config).lexically_normal();
     std::string system, model, base, output_dir;
     siliconelab_composite::Options np;
+    double tensile_rate=0,tensile_strain=0;
     std::set<std::string> np_keys;
     std::vector<Entry> details;
     silicone_config::read_config_file(config.string(), [&](const std::string& option, const std::string& value) {
@@ -157,6 +165,10 @@ int generate(const fs::path& requested_config) {
         else if (option == "--model") set_once(model);
         else if (option == "--base") set_once(base);
         else if (option == "--output-dir") set_once(output_dir);
+        else if(option=="--tensile-erate" || option=="--tensile-strain") {
+            if(!np_keys.insert(option).second)throw std::runtime_error("Duplicate tensile setting: "+option);
+            (option=="--tensile-erate"?tensile_rate:tensile_strain)=siliconelab_composite::number(value);
+        }
         else if (option.rfind("--np-", 0) == 0) {
             if (!np_keys.insert(option).second) throw std::runtime_error("Duplicate NP setting: " + option);
             siliconelab_composite::option(np, option, value);
@@ -176,6 +188,7 @@ int generate(const fs::path& requested_config) {
         np.supplied=true;
     } else if(!base.empty()) throw std::runtime_error("base is only supported for system = composite");
     const auto selected = backend(matrix_system, matrix_model);
+    if((tensile_rate>0)!=(tensile_strain>0))throw std::runtime_error("Specify both tensile_erate and tensile_strain");
     if(np.supplied) {
         if(matrix_system!="coating" && matrix_system!="elastomer")
             throw std::runtime_error("NP composites require a v22, v35, or elastomer matrix");
@@ -216,7 +229,7 @@ int generate(const fs::path& requested_config) {
             throw std::runtime_error("Selected generator did not produce the expected data file");
         if (np.supplied) siliconelab_composite::apply(directory, np, base);
         const auto momentum_inputs = reset_surface_momentum(directory, system);
-        write_manifest(directory, config, system, model, selected, data_name, momentum_inputs,base);
+        write_manifest(directory, config, system, model, selected, data_name, momentum_inputs,base,tensile_rate,tensile_strain);
     } catch (...) {
         // This directory was exclusively created by this call; preexisting runs
         // are rejected above and can never be removed by failure cleanup.
@@ -252,18 +265,20 @@ void composite_help() {
         "Required: np_count (1..512)\n"
         "Geometry: np_radius=30 A; np_spacing=2^(1/6)*np_sigma; np_seed=20261014\n"
         "Beads: np_sigma=6.44584366 A; np_epsilon=1.01287845 kcal/mol; np_bead_mass=74 g/mol\n"
-        "Pairs: np_interaction=wca|lj (default wca); override independently with\n"
+        "Pairs: np_interaction=wca|lj|native_pdms (default wca); override independently with\n"
         "  np_np_interaction, np_matrix_interaction; optional np_np_epsilon,\n"
         "  np_matrix_epsilon, np_matrix_sigma (explicit uniform matrix pair overrides).\n"
         "LJ only: np_np_cutoff, np_matrix_cutoff in A (default 2.5*sigma).\n"
-        "WCA cutoff is fixed at 2^(1/6)*sigma. All NP parameters stay fixed through stages.\n"
+        "WCA cutoff is fixed at 2^(1/6)*sigma. WCA/LJ NP parameters stay fixed through stages.\n"
+        "native_pdms copies each native stage potential/cutoffs; np_lambda=1 scales both NP epsilon channels.\n"
+        "Optional tensile_erate and tensile_strain record the bulk workflow loading protocol.\n"
         "Packing: np_packing_min_distance=4.5 A (intermolecular matrix beads).\n"
         "Outputs: native matrix snapshot in precursor/, composite data/input,\n"
         "  composite.json, nanoparticles.json, canonical np-template.csv, run manifest.\n"
         "Composite static analysis supports the matrix network; see docs/analyzer.md. Generation never submits jobs.\n";
 }
 void capabilities() {
-    std::cout<<R"({"schema_version":1,"systems":["oil","elastomer","coating","composite"],"composite":{"bases":["v22","v35","elastomer"],"geometry":["bulk"],"representations":["rigid_fcc"],"pair_models":["wca","lj"],"independent_pair_channels":["np_np","np_matrix"],"elastomer_architectures":["linear","ring","star","grafted"],"coating_oil_additives":true,"np_count_limits":[1,512],"total_bead_limit":2000000,"analysis_supported":true,"analysis_scope":"bulk matrix basic/topology and composite composition/density","np_obstacle_primitive_paths_supported":false,"dynamics_analysis_supported":false},"units":{"length":"angstrom","energy":"kcal/mol","mass":"g/mol"},"side_effects":{"runs_md":false,"submits_jobs":false,"publishes":false}})"<<'\n';
+    std::cout<<R"({"schema_version":1,"systems":["oil","elastomer","coating","composite"],"composite":{"bases":["v22","v35","elastomer"],"geometry":["bulk"],"representations":["rigid_fcc"],"pair_models":["wca","lj","native_pdms"],"independent_pair_channels":["np_np","np_matrix"],"elastomer_architectures":["linear","ring","star","grafted"],"coating_oil_additives":true,"np_count_limits":[1,512],"total_bead_limit":2000000,"analysis_supported":true,"analysis_scope":"bulk matrix basic/topology and composite composition/density","np_obstacle_primitive_paths_supported":false,"dynamics_analysis_supported":false},"units":{"length":"angstrom","energy":"kcal/mol","mass":"g/mol"},"side_effects":{"runs_md":false,"submits_jobs":false,"publishes":false}})"<<'\n';
 }
 } // namespace
 
