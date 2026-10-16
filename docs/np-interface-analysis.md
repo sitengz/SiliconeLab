@@ -166,3 +166,12 @@ profile and can be configured. `independent_job_limit=8`, `lammps=lmp` and
 zero-step compute-node preflight before MD, then verifies complete frame counts,
 steps, finite output, source hashes, completion and final NP shape. Existing
 evidence is rejected; no automatic MD resubmission is performed.
+
+A completed analysis manifest records execution completion; inspect each observable's
+status and `quality_alerts` before using its results. Tensile trajectories are
+checked against `rigidity_tolerance_A` before calculating deformation profiles.
+If any frame fails, that trajectory has `invalid_rigid_geometry` status, with
+per-frame distances in `rigidity_checks.tsv`, offending steps and source hash in
+`sampling.json`, and no deformation profiles. Independently validated equilibrium,
+final-snapshot, dynamics and bulk stress-table analyses continue. The analyzer
+does not repair coordinates or relax the configured tolerance automatically.

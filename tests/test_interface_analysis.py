@@ -342,6 +342,49 @@ class InterfaceTests(unittest.TestCase):
                     float(row["minimum_image_affine_residual_MSD_A2"]), 0, places=10
                 )
 
+    def test_invalid_tensile_geometry_is_scoped_and_preserves_evidence(self):
+        from unittest.mock import patch
+
+        source = dict(
+            pos=np.array([[10.0, 10, 10], [11.0, 10, 10], [10.0, 11, 10]]),
+            mol=np.array([2, 2, 2]),
+            typ=np.array([6, 6, 6]),
+            L=np.array([40.0, 40, 40]),
+            low=np.zeros(3),
+            mass=np.ones(3),
+        )
+        info = dict(
+            np_radius_bead_centers_A=3,
+            np_molecule_id_start=2,
+            total_molecules=2,
+            beads_per_np=3,
+            np_count=1,
+            np_atom_type=6,
+        )
+        path = self.root / "bad.dump"
+        path.write_text("preserved malformed rigid-body coordinates")
+        pos = source["pos"].copy()
+        pos[1, 0] += 0.03
+        frame = (1000, pos, np.zeros((3, 3)), source["L"], source["low"])
+        c = self.configuration()
+        out = self.root / "invalid"
+        with (
+            patch.object(w, "dump_frames", return_value=iter([frame])),
+            patch.object(w, "volumes") as volume,
+        ):
+            result = w.tensile_interface_series(path, "x", source, info, {}, c, out)
+            volume.assert_not_called()
+        self.assertEqual(result["status"], "invalid_rigid_geometry")
+        self.assertAlmostEqual(result["maximum_NP_distance_change_A"], 0.03)
+        self.assertEqual(result["invalid_frames"][0]["step"], 1000)
+        self.assertEqual(result["source_sha256"], w.sha(path))
+        self.assertTrue((out / "sampling.json").is_file())
+        self.assertTrue((out / "rigidity_checks.tsv").is_file())
+        self.assertFalse((out / "deformation_profiles.tsv").exists())
+        # A user-selected tolerance is honored and saved by the normal config path.
+        c = self.configuration(rigidity_tolerance_A=0.04)
+        self.assertEqual(c["rigidity_tolerance_A"], 0.04)
+
     def test_added_dynamics_preserves_cold_header_and_validates_sampling(self):
         request = self.root / "dynamics.json"
         request.write_text(

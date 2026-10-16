@@ -1104,6 +1104,8 @@ def tensile_interface_series(path, axis, source, info, weights, c, out):
     max_error = 0.0
     total_frames = 0
     last = None
+    candidates = []
+    geometry = []
     k = "xyz".index(axis)
 
     def analyze(step, pos, L, low):
@@ -1151,23 +1153,47 @@ def tensile_interface_series(path, axis, source, info, weights, c, out):
     for step, pos, images, L, low in dump_frames(path, source, fixed_box=False):
         total_frames += 1
         _, body = body_centers(pos, source["mol"], info, L)
-        max_error = max(
-            max_error,
-            max(float(np.max(np.abs(a - b))) for a, b in zip(body, reference)),
-        )
-        if max_error > c["rigidity_tolerance_A"]:
-            raise ValueError("NP shape changed during tensile trajectory")
+        errors = [float(np.max(np.abs(a - b))) for a, b in zip(body, reference)]
+        error = max(errors)
+        max_error = max(max_error, error)
         strain = float(L[k] / source["L"][k] - 1)
+        geometry.append(
+            dict(
+                step=step,
+                engineering_strain=strain,
+                maximum_NP_distance_change_A=error,
+                worst_NP_molecule=info["np_molecule_id_start"] + int(np.argmax(errors)),
+                exceeds_tolerance=error > c["rigidity_tolerance_A"],
+            )
+        )
         if strain >= next_strain - 1e-7:
-            analyze(step, pos, L, low)
+            candidates.append((step, pos, L, low))
             next_strain = (
                 math.floor((strain + 1e-7) / c["tensile_profile_interval_strain"]) + 1
             ) * c["tensile_profile_interval_strain"]
         last = (step, pos, L, low)
     if last is None:
         raise ValueError("Empty tensile trajectory")
-    if not sampled or sampled[-1]["step"] != last[0]:
-        analyze(*last)
+    write_tsv(out / "rigidity_checks.tsv", geometry)
+    invalid = [row for row in geometry if row["exceeds_tolerance"]]
+    if invalid:
+        result = dict(
+            status="invalid_rigid_geometry",
+            source=str(path),
+            source_sha256=sha(path),
+            frames_checked=total_frames,
+            sampled_frames=[],
+            maximum_NP_distance_change_A=max_error,
+            rigidity_tolerance_A=c["rigidity_tolerance_A"],
+            invalid_frames=invalid,
+            quality="Saved NP distance changes exceed the configured rigid-body tolerance. Deformation-shell profiles and displacement interpretation are excluded for this trajectory. No coordinates were repaired or tolerance relaxed. Other independently validated observables may still be analyzed.",
+        )
+        write_json(out / "sampling.json", result)
+        return result
+    if not candidates or candidates[-1][0] != last[0]:
+        candidates.append(last)
+    for frame in candidates:
+        analyze(*frame)
     write_tsv(out / "deformation_profiles.tsv", rows)
     result = dict(
         status="complete",
@@ -1293,6 +1319,11 @@ def part2(c):
             )
             for axis, path in c["tensile_trajectories"].items()
         }
+        result["quality_alerts"] = [
+            dict(observable="tensile_interface_evolution", axis=axis, **value)
+            for axis, value in result["tensile_evolution"].items()
+            if value["status"] != "complete"
+        ]
         result["dynamics"] = {}
         for tr in c["trajectories"]:
             label = tr.get("label", tr["kind"])
@@ -1401,6 +1432,18 @@ def write_structure_report(result, out):
                 else ""
             )
         )
+    lines += ["", "## Observable quality alerts", ""]
+    lines += [
+        "- "
+        + alert["observable"]
+        + " "
+        + alert["axis"]
+        + ": "
+        + alert["status"]
+        + ". "
+        + alert.get("quality", "")
+        for alert in result.get("quality_alerts", [])
+    ]
     lines += [
         "",
         "NP-obstacle primitive paths/entanglements remain unimplemented. Noncovalent NP contacts do not create chemical network junctions.",
@@ -1511,6 +1554,7 @@ def part3(c):
         result["interface_structure"] = p2["equilibrium"]
         result["network"] = p2["network"]
         result["interface_tensile_evolution"] = p2.get("tensile_evolution", {})
+        result["quality_alerts"] = p2.get("quality_alerts", [])
         coupling = []
         for label, dyn in p2["dynamics"].items():
             if dyn.get("status") != "complete":
@@ -1632,6 +1676,18 @@ def part3(c):
                         if fit["R2"] is not None
                         else f"| {axis} | {fit['window']} | {fit['Young_modulus_MPa']:.4g} | unavailable |"
                     )
+        lines += ["", "## Observable quality alerts", ""]
+        lines += [
+            "- "
+            + alert["observable"]
+            + " "
+            + alert["axis"]
+            + ": "
+            + alert["status"]
+            + ". "
+            + alert.get("quality", "")
+            for alert in result["quality_alerts"]
+        ]
         lines += ["", "## Interpretation limits", ""] + [
             "- " + s for s in result["interpretation_limits"]
         ]
