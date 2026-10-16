@@ -241,7 +241,9 @@ structural analyzer supports composite validation and matrix-only basic/topology
 analysis, including the legacy NP prototype format. See
 [composite analysis scope and invocation](analyzer.md#composite-basic-and-topology-analysis).
 Do not pair the preserved matrix metadata with full composite data. Composite
-trajectory, Part 2/Part 3 and NP-obstacle primitive-path analysis remain unsupported.
+NP-distance trajectory and bulk Part 2/Part 3 analysis use the explicit saved
+configuration in [the interface guide](np-interface-analysis.md). NP-obstacle
+primitive-path analysis remains unsupported.
 The subset-temperature NPT warning is expected because pressure is explicitly
 overridden with the whole-composite compute; image-flag warnings can arise from
 new periodic crosslinks. Validation records identify these separately from NP
@@ -277,4 +279,5 @@ checks expanded account queue elements against the eight-independent-job limit,
 saves accepted IDs atomically and refuses duplicate or automatic MD resubmission.
 Each stage pins the executor, checks inputs and parent contracts, and verifies
 full duration/sampling, counts, hashes and rigid NP geometry on its compute node.
-This simulation workflow does not enable unsupported composite Part 2/Part 3.
+This simulation workflow does not automatically run the separate NP interface
+analysis; use the interface configuration when those outputs are required.

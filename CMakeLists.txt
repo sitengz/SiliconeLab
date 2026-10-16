@@ -20,11 +20,15 @@ install(TARGETS siliconelab_generator RUNTIME DESTINATION bin)
 
 add_executable(siliconelab_static src/analysis/static.cpp)
 add_executable(siliconelab_topology src/analysis/topology.cpp)
+add_executable(siliconelab_interface_network src/analysis/interface_network.cpp)
+install(TARGETS siliconelab_interface_network RUNTIME DESTINATION bin)
 install(TARGETS siliconelab_static siliconelab_topology RUNTIME DESTINATION bin)
 configure_file(src/siliconelab_analyzer.py siliconelab_analyzer COPYONLY)
 install(PROGRAMS src/siliconelab_analyzer.py DESTINATION bin RENAME siliconelab_analyzer)
 configure_file(src/siliconelab_composite_analysis.py siliconelab_composite_analysis.py COPYONLY)
 install(FILES src/siliconelab_composite_analysis.py DESTINATION bin)
+configure_file(src/siliconelab_interface.py siliconelab_interface.py COPYONLY)
+install(FILES src/siliconelab_interface.py DESTINATION bin)
 
 add_executable(siliconelab_spatial_dynamics src/analysis/spatial_dynamics.cpp)
 add_executable(siliconelab_profiles src/analysis/profiles.cpp)
@@ -44,6 +48,10 @@ install(FILES vendor/Silicone_Oil/Analysis/atsc4i.py DESTINATION bin RENAME sili
 include(CTest)
 if(BUILD_TESTING)
     find_package(Python3 COMPONENTS Interpreter REQUIRED)
+    add_test(NAME interface_analysis_contract
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_interface_analysis.py"
+        --generator $<TARGET_FILE:siliconelab_generator>
+        --backend-dir $<TARGET_FILE_DIR:siliconelab_interface_network>)
     add_test(NAME bulk_workflow_contract
         COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_bulk_workflow.py")
     add_test(NAME composite_generator_contract

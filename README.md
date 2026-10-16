@@ -175,10 +175,15 @@ have completed four small and four full-size bulk simulations using private
 local orchestration profiles. Retrieval, a portable persistent controller,
 recovery and the AI interface remain future work.
 
-To run the generator and analyzer checks (Python 3.9+ is required for testing):
+To run the generator and analyzer checks (Python 3.9+ and the analysis
+dependencies, including NumPy, are required for the full suite):
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
 cmake --build build --config Release --parallel
 ctest --test-dir build -C Release --output-on-failure
 ```
+
+Bulk rigid-NP systems also have a configurable
+[interface analysis](docs/np-interface-analysis.md) for local network defects,
+active-strand density, mobility and independent xyz tensile response.

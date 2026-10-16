@@ -318,8 +318,13 @@ def plot_surface(rows, blocks, path):
 
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("info", type=Path)
-    p.add_argument("--output-dir", type=Path, required=True)
+    p.add_argument("info", type=Path, nargs="?")
+    p.add_argument("--output-dir", type=Path)
+    p.add_argument(
+        "--config",
+        type=Path,
+        help="Saved JSON configuration for rigid-NP bulk/interface analysis",
+    )
     p.add_argument("--geometry", choices=["bulk", "film"])
     p.add_argument("--pressure-production", type=Path)
     p.add_argument("--pressure-equil", type=Path)
@@ -335,6 +340,20 @@ def main(argv=None):
     p.add_argument("--descriptor-tool")
     p.add_argument("--no-plots", action="store_true")
     a = p.parse_args(argv)
+    if a.config:
+        if any(
+            value != p.get_default(name)
+            for name, value in vars(a).items()
+            if name != "config"
+        ):
+            p.error(
+                "Use the saved interface configuration without command-line overrides"
+            )
+        from siliconelab_interface import configure, part3
+
+        return part3(configure(a.config))
+    if not (a.info and a.output_dir):
+        p.error("info and --output-dir are required without --config")
     if a.output_dir.exists():
         raise ValueError("Choose a new output directory; results are never overwritten")
     if a.block_ns <= 0 or a.expected_production_ns <= 0:

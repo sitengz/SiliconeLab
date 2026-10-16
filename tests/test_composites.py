@@ -219,7 +219,8 @@ class CompositeContracts(unittest.TestCase):
         capability=json.loads(result.stdout)['composite']
         self.assertTrue(capability['analysis_supported'])
         self.assertFalse(capability['np_obstacle_primitive_paths_supported'])
-        self.assertFalse(capability['dynamics_analysis_supported'])
+        self.assertTrue(capability['dynamics_analysis_supported'])
+        self.assertIn('explicit configuration', capability['dynamics_analysis_scope'])
         result=subprocess.run([str(GEN),'--help','composite'],capture_output=True,text=True,check=True)
         self.assertIn('np_matrix_interaction',result.stdout)
         for system,base in (('coating','v22'),('coating','v35'),('elastomer','elastomer')):

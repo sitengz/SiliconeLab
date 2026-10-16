@@ -365,9 +365,14 @@ def summarize_dynamics(folder, out, kind, np):
 
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("data", type=Path)
-    p.add_argument("info", type=Path)
-    p.add_argument("--output-dir", type=Path, required=True)
+    p.add_argument("data", type=Path, nargs="?")
+    p.add_argument("info", type=Path, nargs="?")
+    p.add_argument("--output-dir", type=Path)
+    p.add_argument(
+        "--config",
+        type=Path,
+        help="Saved JSON configuration for rigid-NP interface analysis",
+    )
     p.add_argument("--geometry", choices=["bulk", "film"])
     p.add_argument("--trajectory", type=Path)
     p.add_argument("--dw-trajectory", type=Path)
@@ -376,6 +381,20 @@ def main(argv=None):
     p.add_argument("--max-origins", type=int, default=16)
     p.add_argument("--contact-cutoff", type=float, default=8)
     a = p.parse_args(argv)
+    if a.config:
+        if any(
+            value != p.get_default(name)
+            for name, value in vars(a).items()
+            if name != "config"
+        ):
+            p.error(
+                "Use the saved interface configuration without command-line overrides"
+            )
+        from siliconelab_interface import configure, part2
+
+        return part2(configure(a.config))
+    if not (a.data and a.info and a.output_dir):
+        p.error("data, info and --output-dir are required without --config")
     try:
         import numpy as np
     except ImportError:

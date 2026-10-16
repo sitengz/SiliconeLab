@@ -532,7 +532,7 @@ inline void apply(const fs::path& folder,const Options& o,const std::string& bas
         <<"  \"rigid_coordinate_updates\": \"one fixed-volume step after each box-changing phase, resolved from runtime step\",\n"
         <<"  \"matrix_minimization\": \"native settings retained; NP coordinates held fixed during minimization\",\n"
         <<"  \"np_initialization\": \"added NP velocities at 800 K, seed as packing_seed\",\n"
-        <<"  \"analysis_status\": \"bulk matrix basic/topology supported; composite dynamics and NP-obstacle primitive paths unsupported\",\n"
+        <<"  \"analysis_status\": \"bulk matrix basic/topology and configured NP-distance structure/dynamics/tensile supported; NP-obstacle primitive paths unsupported\",\n"
         <<"  \"precursor_info\": "<<native_info<<",\n  \"np_pairs\": [\n";
     for(int i=1;i<=np_type;++i) {
         const auto p=pair(o,i,np_type);
