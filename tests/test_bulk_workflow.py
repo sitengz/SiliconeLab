@@ -32,6 +32,12 @@ pair_coeff 6 6 .808 6.44
 
 
 class BulkContracts(unittest.TestCase):
+    def test_actual_lammps_errors_are_distinct_from_warning_prose(self):
+        self.assertFalse(w.has_lammps_error("WARNING: Communication cutoff may lead to errors.\n"))
+        self.assertTrue(w.has_lammps_error("ERROR: Lost atoms\n"))
+        self.assertTrue(w.has_lammps_error("  ERROR on proc 0: Missing bond atoms\n"))
+        self.assertTrue(w.has_lammps_error("100 300 nan 1.2\n"))
+
     def test_seven_configs_and_fixed_matrix(self):
         with tempfile.TemporaryDirectory() as d:
             batch = Path(d) / "batch"

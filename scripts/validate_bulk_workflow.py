@@ -31,7 +31,7 @@ def execute(folder, text, lammps):
         subprocess.run(["srun", "--ntasks=1", str(lammps), "-in", "in.validation", "-log", "lammps.log"],
                        cwd=folder, stdout=out, stderr=err, check=True)
     log = (folder / "lammps.log").read_text()
-    if re.search(r"ERROR|\b(?:nan|inf)\b", log, re.I):
+    if w.has_lammps_error(log):
         raise RuntimeError("LAMMPS validation error: " + str(folder))
     return {"directory": str(folder), "warnings": sorted(set(line.strip() for line in log.splitlines() if "WARNING:" in line)),
             "executed_steps": sum(map(int, re.findall(r"Loop time of .*? for (\d+) steps", log)))}

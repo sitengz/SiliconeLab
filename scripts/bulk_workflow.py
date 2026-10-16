@@ -52,6 +52,10 @@ def commands(text):
             if line.split("#", 1)[0].strip()]
 
 
+def has_lammps_error(text):
+    return bool(re.search(r"^\s*ERROR(?:\s|:)|\b(?:nan|inf)\b", text, re.I | re.M))
+
+
 def cold_header(text, data):
     """Use the actual final native stage coefficients, including scaled NP pairs."""
     settings, bonded, pairs = {}, {}, {}
@@ -359,7 +363,7 @@ def validate_stage(directory, spec, result):
     if error > 1e-6:
         raise ValueError("Final NP geometry changed")
     text = (directory / "lammps.log").read_text()
-    if re.search(r"ERROR|\b(?:nan|inf)\b", text, re.I) or ("SILICONELAB_STAGE_COMPLETE " + spec["stage"]) not in text:
+    if has_lammps_error(text) or ("SILICONELAB_STAGE_COMPLETE " + spec["stage"]) not in text:
         raise ValueError("LAMMPS error/nonfinite output or missing completion marker")
     steps = sum(map(int, re.findall(r"Loop time of .*? for (\d+) steps", text)))
     if steps != spec["expected_MD_steps"]:
