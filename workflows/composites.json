@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "series": "composite",
+  "scope": "periodic bulk; native oil/elastomer/coating cases remain supported",
+  "publication_status": "shared generator/analyzer integration; local example checks are separate from prototype production validation",
+  "submission_authorized": false,
+  "analysis_supported": true,
+  "analysis_scope": "bulk composite validation and matrix-only basic/topology; total density and NP mass fraction reported separately",
+  "composite_dynamics_analysis_supported": false,
+  "np_obstacle_primitive_paths_supported": false,
+  "discovery_command": "siliconelab_generator --capabilities",
+  "help_command": "siliconelab_generator --help composite",
+  "base_choices": [
+    "v22",
+    "v35",
+    "elastomer"
+  ],
+  "np_pair_choices": [
+    "wca",
+    "lj"
+  ],
+  "np_pair_channels": [
+    "np_np",
+    "np_matrix"
+  ],
+  "cases": [
+    {
+      "id": "v22-wca",
+      "config": "examples/composites/v22-wca.conf",
+      "run_directory": "runs/composite-local/v22-wca",
+      "base": "v22",
+      "validation": "preflight and short dynamics"
+    },
+    {
+      "id": "v35-adhesive",
+      "config": "examples/composites/v35-adhesive.conf",
+      "run_directory": "runs/composite-local/v35-adhesive",
+      "base": "v35",
+      "oil": "copolymer",
+      "validation": "preflight and short dynamics"
+    },
+    {
+      "id": "elastomer-star",
+      "config": "examples/composites/elastomer-star.conf",
+      "run_directory": "runs/composite-local/elastomer-star",
+      "base": "elastomer",
+      "validation": "preflight, native minimization and short dynamics"
+    },
+    {
+      "id": "elastomer-controlled",
+      "config": "examples/composites/elastomer-controlled.conf",
+      "run_directory": "runs/composite-local/elastomer-controlled",
+      "base": "elastomer",
+      "validation": "preflight, native minimization, short dynamics and forced early conversion halt"
+    },
+    {
+      "id": "v22-np32",
+      "config": "examples/composites/v22-np32.conf",
+      "run_directory": "runs/composite-local/v22-np32",
+      "base": "v22",
+      "np_count": 32,
+      "validation": "short dynamics; separate copy of original formulation"
+    }
+  ],
+  "original_sample": "runs/np-repulsive-v22/v22-np32",
+  "production_results": "Generalized example checks are preflight/short dynamics. Historical 32-NP prototype job 16907064 completed 0:0; matrix analyzer job 16932436 completed 0:0 with 18 legacy outputs matching. Neither establishes scientific convergence.",
+  "directional_periodic_paths": "provisional; inherited native edge image-shift limitation is recorded in new composite analysis manifests"
+}

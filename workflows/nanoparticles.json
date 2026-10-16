@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "series": "coating-nanoparticle",
+  "status": "prototype execution and matrix structural analysis verified; convergence not established",
+  "cases": [
+    {
+      "id": "v22-np32",
+      "config": "examples/nanoparticles/v22-np32.conf",
+      "run_directory": "runs/np-repulsive-v22/v22-np32",
+      "system": "coating",
+      "model": "v22",
+      "np_count": 32,
+      "precursor_beads": 122430,
+      "np_beads": 13728,
+      "total_beads": 136158,
+      "np_weight_percent": 10.082404265632574,
+      "np_representation": "rigid_fcc",
+      "np_radius_bead_centers_A": 30,
+      "np_pair_model": "WCA constituent-bead pairs with fixed 300 K parameters",
+      "initial_data": "data.v22-np32",
+      "primary_input": "in.v22-np32",
+      "final_data": "data.v22-np32.npt_eq",
+      "oil_enabled": false,
+      "validation_record": "validation/validation.json",
+      "validation": "5 CTest suites; LAMMPS all-stage preflight; 163-step smoke; boundary-spanning rigid-body test",
+      "production_run_completed": true,
+      "native_md_steps": 8000000,
+      "additional_fixed_volume_steps": 3,
+      "analysis_support": "bulk composite validation and matrix-only basic/topology; NP-obstacle Z1 and composite Part 2/Part 3 unsupported",
+      "production_job_id": "16907064",
+      "production_exit_code": "0:0",
+      "production_validation_scope": "stage snapshot rigidity and bounded trajectory endpoints; full production trajectory not scanned",
+      "production_convergence": "not established",
+      "analysis_validation_job_id": "16932436",
+      "analysis_validation_exit_code": "0:0",
+      "legacy_matrix_outputs_compared": 18,
+      "directional_periodic_paths": "provisional; inherited native image-shift limitation"
+    }
+  ],
+  "submission_authorized": false,
+  "existing_reference_workflow_paths": "unchanged",
+  "submission_authorization_scope": "This recipe record does not authorize future submissions; the recorded jobs are historical validation evidence."
+}
