@@ -860,6 +860,17 @@ def dump_frames(path, source, fixed_box=True):
             yield step, pos, images, L, bounds[:, 0]
 
 
+def time_origins(nframes, offset, c):
+    possible = np.arange(0, nframes - offset, c["origin_stride"])
+    return possible[
+        np.unique(
+            np.linspace(
+                0, len(possible) - 1, min(len(possible), c["max_origins"])
+            ).astype(int)
+        )
+    ]
+
+
 def trajectory_analysis(tr, s, info, weights, masks, c, out):
     if not Path(tr["path"]).is_file():
         return dict(status="missing_output", path=tr["path"])
@@ -964,14 +975,7 @@ def trajectory_analysis(tr, s, info, weights, masks, c, out):
         ):
             missing.append(lag)
             continue
-        possible = np.arange(0, nframes - offset, c["origin_stride"])
-        origins = possible[
-            np.unique(
-                np.linspace(
-                    0, len(possible) - 1, min(len(possible), c["max_origins"])
-                ).astype(int)
-            )
-        ]
+        origins = time_origins(nframes, offset, c)
         records = {name: np.zeros((nb, 9)) for name in group_masks}
         for origin in origins:
             target = origin + offset
@@ -1042,11 +1046,7 @@ def trajectory_analysis(tr, s, info, weights, masks, c, out):
             or not math.isclose(offset * interval_ps, lag, abs_tol=1e-7)
         ):
             continue
-        origins = np.unique(
-            np.linspace(
-                0, nframes - offset - 1, min(nframes - offset, c["max_origins"])
-            ).astype(int)
-        )
+        origins = time_origins(nframes, offset, c)
         displacement = (
             centers[origins + offset]
             - centers[origins]

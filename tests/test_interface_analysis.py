@@ -224,6 +224,15 @@ class InterfaceTests(unittest.TestCase):
                 self.assertAlmostEqual(
                     float(row["MSD_relative_to_origin_NP_A2"]), 0, places=10
                 )
+        c["origin_stride"] = 2
+        out = self.root / "strided"
+        w.trajectory_analysis(
+            dict(path=str(path), kind="dw"), s, info, {}, masks, c, out
+        )
+        for row in w.read_tsv(out / "NP_COM_MSD.tsv"):
+            self.assertEqual(int(row["origins"]), 1)
+        for row in w.read_tsv(out / "radial_dynamics.tsv"):
+            self.assertEqual(int(row["origins"]), 1)
         path.write_text(path.read_text().rsplit("\n", 2)[0] + "\n")
         with self.assertRaises(ValueError):
             list(w.dump_frames(path, s))
