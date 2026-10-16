@@ -241,5 +241,42 @@ class CompositeContracts(unittest.TestCase):
         self.generate(ok=False)
         self.assertEqual((run/'data.case').read_bytes(),original)
 
+    def test_native_pdms_lambda_matches_every_native_stage(self):
+        previous=None
+        for index,lam in enumerate((1,.9,.8,.7,.6,.5)):
+            run,_=self.generate(name=f'native-{index}',extra=f'np_interaction=native_pdms\nnp_lambda={lam}\ntensile_erate=2e-8\ntensile_strain=1\n')
+            actual=structure(run/('data.'+run.name))[3]
+            if previous is not None:self.assertEqual(previous,actual)
+            previous=actual
+            def stages(path):
+                result=[]
+                for line in path.read_text().splitlines():
+                    w=line.split()
+                    if w[:1]==['pair_style']:result.append((w[1:],{}))
+                    elif w[:1]==['pair_coeff']:result[-1][1][tuple(map(int,w[1:3]))]=list(map(float,w[3:]))
+                return result
+            reference=stages(run/('precursor/in.'+run.name));resolved=stages(run/('in.'+run.name))
+            self.assertEqual(len(resolved),2)
+            meta=json.loads((run/'composite.json').read_text())
+            for n,((style,pairs),(original_style,original_pairs)) in enumerate(zip(resolved,reference)):
+                self.assertEqual(style,original_style)
+                for key,values in original_pairs.items():self.assertEqual(pairs[key],values)
+                for i in range(1,7):
+                    ref=original_pairs[(1,1 if i==6 else i)]
+                    self.assertEqual(pairs[(i,6)],[ref[0]*lam,*ref[1:]])
+                    recorded=meta['np_native_stages'][n]['pairs'][i-1]
+                    self.assertEqual(recorded['epsilon_kcal_mol'],pairs[(i,6)][0])
+                    self.assertEqual(recorded['sigma_A'],pairs[(i,6)][1])
+            self.assertNotIn('pair_modify',(run/('in.'+run.name)).read_text())
+            self.assertEqual(meta['np_parameter_policy'],'native_stage_matched')
+            protocol=json.loads((run/'siliconelab.json').read_text())['bulk_tensile']
+            self.assertEqual(protocol['engineering_rate_fs_inverse'],2e-8)
+            self.assertEqual(protocol['target_engineering_strain'],1)
+
+    def test_native_pdms_overrides_and_partial_tensile_protocol_rejected(self):
+        for i,extra in enumerate(('np_interaction=native_pdms\nnp_sigma=7','np_lambda=.5','tensile_erate=2e-8','np_interaction=native_pdms\nnp_np_interaction=wca')):
+            run,_=self.generate(name=f'bad-native-{i}',extra=extra,ok=False)
+            self.assertFalse(run.exists())
+
 if __name__=='__main__':
     unittest.main(argv=[__file__,*REST])

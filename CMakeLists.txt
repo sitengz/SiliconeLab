@@ -44,6 +44,8 @@ install(FILES vendor/Silicone_Oil/Analysis/atsc4i.py DESTINATION bin RENAME sili
 include(CTest)
 if(BUILD_TESTING)
     find_package(Python3 COMPONENTS Interpreter REQUIRED)
+    add_test(NAME bulk_workflow_contract
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_bulk_workflow.py")
     add_test(NAME composite_generator_contract
         COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_composites.py"
         --generator $<TARGET_FILE:siliconelab_generator>)
