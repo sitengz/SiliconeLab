@@ -38,6 +38,9 @@ def save_json(path, value):
 def normalize(info, geometry=None):
     """Preserve source semantics while mapping component ranges to the C++ reader."""
     fmt = info.get("format")
+    if fmt in ("siliconelab-composite-info", "siliconelab-np-coating-info"):
+        from siliconelab_composite_analysis import normalize_composite
+        return normalize_composite(info, normalize, geometry)
     if fmt == "pdms-elastomer-model-info":
         if info.get("format_version", 0) < 3:
             raise ValueError("elastomer metadata version 3 or newer is required")
@@ -137,7 +140,7 @@ def normalize(info, geometry=None):
         initial_bonds = info["topology_counts"]["bonds"]["total"]
         type2 = type3 = 0
     else:
-        raise ValueError("unsupported info format; expected silicone oil, elastomer v3+, or V22/V35 v2")
+        raise ValueError("unsupported info format; expected silicone oil, elastomer v3+, V22/V35 v2, or rigid-NP composite v1")
     result.update(format="siliconelab-analysis-info", format_version=1,
                   source_system=system, source_format=fmt or info.get("model"),
                   network_enabled=int(system != "oil"), initial_bonds=initial_bonds,
@@ -341,6 +344,8 @@ def main(argv=None):
     parser.add_argument("--z1-command", default="Z1+")
     parser.add_argument("--z1-mode", choices=("run", "export"), default="run")
     parser.add_argument("--z1-selection", choices=("network", "network+oil"), default="network+oil")
+    parser.add_argument("--composite-z1-matrix-only", action="store_true",
+                        help="run a matrix-only Z1 diagnostic, explicitly omitting rigid NP obstacles")
     parser.add_argument("--geometry", choices=("bulk", "film"))
     parser.add_argument("--film-z1-validated", action="store_true",
                         help="explicitly acknowledge validated Z1+ film boundary handling")
@@ -349,6 +354,11 @@ def main(argv=None):
     data, original = args.equilibrated_data.resolve(), args.info.resolve()
     info = json.loads(original.read_text())
     normalized = normalize(info, args.geometry)
+    composite = normalized["source_system"] == "composite"
+    matrix_info = info["precursor_info"] if composite else info
+    matrix_system = normalized.get("matrix_system", normalized["source_system"])
+    if args.composite_z1_matrix_only and not composite:
+        raise ValueError("--composite-z1-matrix-only requires composite metadata")
     case = normalized["case_name"]
     if not case or any(c not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-+." for c in case):
         raise ValueError("unsafe case name")
@@ -389,20 +399,56 @@ def main(argv=None):
         norm_path = out / "normalized_info.json"
         save_json(norm_path,normalized)
         shutil.copyfile(original,out / "source.info")
-        run([backend / ("siliconelab_static" + suffix),data,norm_path,out], out,out / "analysis.log")
+        analysis_data = data
+        if composite:
+            from siliconelab_composite_analysis import project_matrix
+            adapter = Path(project_matrix.__code__.co_filename).resolve()
+            status["software"]["composite_adapter"] = {"path": str(adapter), "sha256": sha256(adapter)}
+            analysis_data = out / "matrix.data"
+            status["composite"] = project_matrix(data, analysis_data, info, normalized)
+            status["matrix_system"] = matrix_system
+            status["matrix_projection"] = {"path": str(analysis_data), "sha256": sha256(analysis_data),
+                "atom_and_molecule_ids_preserved": True, "box_preserved": True,
+                "covalent_topology_preserved": True}
+            status["snapshot_scope"] = "matrix only; full-composite quantities are in composite"
+            status["quality"] = {"directional_periodic_paths": {
+                "status": "provisional",
+                "reason": "Inherited native edge image shifts omit the minimum-image node boundary shift; directional self-image paths require correction and independent validation.",
+                "ordinary_connectivity_and_defect_counts_affected": False,
+            }}
+            save_json(out / "composite_statistics.json", status["composite"])
+            (out / "analysis_scope.txt").write_text(
+                "Composite structural analysis\n"
+                "Native basic/topology tables describe the matrix covalent network and its oil.\n"
+                "NPs are validated separately and excluded from chemical clusters, defects and chain exports.\n"
+                "Original atom/molecule IDs, coordinates, velocities, box and all matrix topology are preserved.\n"
+                "snapshot_statistics.tsv density is matrix mass per full composite box volume.\n"
+                "composite_statistics.json records total composite density and actual NP mass fraction.\n"
+                "Kinetic temperature uses flexible matrix velocities and matrix degrees of freedom.\n"
+                "Structural moduli are matrix network estimates per full box volume, not composite reinforcement.\n"
+                "Z1 exports omit NP obstacles; any optional Z1 calculation is a matrix-only diagnostic.\n")
+            status["warnings"].extend([
+                "Composite: native basic/topology outputs describe the matrix only; NP beads are excluded from the covalent graph.",
+                "Matrix density uses the full composite box, including space occupied by NPs; see composite_statistics.json for total density.",
+                "Structural modulus estimates omit NP reinforcement and use the full composite box volume.",
+                "Z1 contour exports omit rigid NP obstacles; matrix-only primitive paths cannot measure NP-induced entanglement constraints.",
+                "Inherited simulation image-flag warnings require review for unwrapped observables; covalent contours use bond-by-bond reconstruction.",
+                "Directional periodic self-image paths are provisional because of the inherited edge image-shift convention; unreachable x/y paths do not establish absence of periodic spanning.",
+            ])
+        run([backend / ("siliconelab_static" + suffix),analysis_data,norm_path,out], out,out / "analysis.log")
         network = bool(normalized["network_enabled"])
         if network:
-            run([backend / ("siliconelab_topology" + suffix),data,norm_path,"--output-dir",out],
+            run([backend / ("siliconelab_topology" + suffix),analysis_data,norm_path,"--output-dir",out],
                 out,out / "analysis.log")
         status["snapshot"] = metrics(out / "snapshot_statistics.tsv")
         oil_rows=table(out / "oil_chain_properties.tsv")
-        if status["system"] == "oil":
+        if matrix_system == "oil":
             histogram=collections.Counter(int(r["backbone_beads"]) for r in oil_rows)
             expected={r["length"]:r["chains"] for r in info["composition"]["chain_length_distribution"]}
             if dict(histogram)!=expected:
                 raise ValueError("oil backbone length histogram differs from metadata")
-        elif status["system"] == "coating" and oil_rows:
-            oil=info["silicone_oil"]
+        elif matrix_system == "coating" and oil_rows:
+            oil=matrix_info["silicone_oil"]
             if any(int(r["backbone_beads"])!=oil["repeat_units_per_chain"] for r in oil_rows):
                 raise ValueError("coating oil backbone length differs from metadata")
             histogram=collections.Counter(int(r["beads"]) for r in oil_rows)
@@ -417,6 +463,10 @@ def main(argv=None):
             row["status"] = "complete" if network or row["id"] not in NETWORK_ONLY else "not_applicable"
             if row["status"] == "not_applicable":
                 row["reason"] = "uncrosslinked oil has no chemical network"
+            if composite:
+                row["population"] = "full composite validation" if row["id"] == 1 else "matrix"
+                if row["id"] == 2:
+                    row["population"] = "total composite density; matrix density and kinetic temperature"
         if status["snapshot"]["velocity_temperature"] is None:
             status["warnings"].append("Temperature unavailable: snapshot has no complete velocities; no value inferred from thermostat setting.")
         if network:
@@ -429,6 +479,9 @@ def main(argv=None):
         status["warnings"].append("Snapshot statistics do not establish equilibration or uncertainty; structural moduli are estimates.")
         if args.z1_mode == "export":
             status["analyses"][11].update(status="not_run",reason="export-only mode requested")
+        elif composite and not args.composite_z1_matrix_only:
+            status["analyses"][11].update(status="blocked",
+                reason="rigid NP obstacles are absent from Z1 input; use export mode for static analyses or explicitly opt into --composite-z1-matrix-only diagnostics")
         elif not mapping:
             status["analyses"][11].update(status="not_applicable",reason="no selected contours with more than two beads")
         elif normalized["geometry"] == "film" and not args.film_z1_validated:
@@ -436,6 +489,8 @@ def main(argv=None):
         elif command is None:
             status["analyses"][11].update(status="blocked",reason="Z1+ not found; supply --z1-command")
         else:
+            if composite:
+                status["analyses"][11]["population"] = "matrix-only diagnostic; NP obstacles omitted"
             status["z1_command"] = [command,"config.Z1"]
             status["software"]["z1_launcher"] = {"path": command, "sha256": sha256(command)}
             with (folder / "Z1.stdout.log").open("w") as f:
@@ -461,6 +516,8 @@ def main(argv=None):
                 status["warnings"].append("Ring/star/grafted Lpp belongs to the documented trimmed export contour; it is not the original full strand contour.")
         if sha256(data)!=status["inputs"]["data_sha256"] or sha256(original)!=status["inputs"]["info_sha256"]:
             raise RuntimeError("input files changed during analysis")
+        if composite and sha256(analysis_data) != status["matrix_projection"]["sha256"]:
+            raise RuntimeError("matrix projection changed during analysis")
         blocked = any(r["status"] == "blocked" for r in status["analyses"])
         status["status"] = "partial" if blocked or args.z1_mode=="export" else "complete"
         status["finished_at"] = datetime.now(timezone.utc).isoformat()

@@ -40,6 +40,7 @@ boxes are rejected explicitly; tilt factors are never silently ignored.
 | Standalone oil | `model = standalone PDMS/PMPS silicone oil` | All oil molecules, including chain-length distributions |
 | Elastomer | `pdms-elastomer-model-info`, version 3+ | Linear, ring, star, or grafted network, with optional PDMS filler |
 | Coating | `V22-model-info` or `V35-model-info`, version 2 | Bifunctional network, crosslinkers, moderators, PDMS/PMPS/copolymer oil |
+| Composite | `siliconelab-composite-info`, version 1; legacy `siliconelab-np-coating-info`, version 1 | Bulk matrix network and its oil; rigid noncovalent NPs validated separately |
 
 The controller saves `source.info` and an explicit `normalized_info.json`;
 the original metadata is not relabeled or edited. Coating component order is
@@ -58,6 +59,62 @@ are recorded and rechecked at the end.
 The manifest also records hashes of the controller, C++ executables and Z1+
 launcher. The launcher hash does not identify every file in an external Z1+
 installation; preserve that installation separately for reproduction.
+
+## Composite basic and topology analysis
+
+The controller automatically labels recognized NP metadata as `system: composite`.
+Use the full composite `.info` file rather than the nested precursor metadata:
+
+```sh
+./build/siliconelab_analyzer data.v22-np32.npt_eq v22-np32.info \
+    --z1-mode export --output-dir analysis-composite
+```
+
+This runs the previous basic and topology calculations on the **matrix covalent
+subgraph**, including any matrix oil. The adapter first validates the full
+snapshot: actual component/particle counts, per-particle molecule ranges,
+distinct dynamic NP atom type, masses and weight fraction, complete optional
+velocities, finite coordinates and absence of NP atoms from bonds, angles,
+dihedrals and impropers. Covalently grafted NPs are currently rejected.
+
+It writes `matrix.data` with the original matrix atom/molecule IDs, coordinates,
+velocities, box, bonds and higher topology. Pair/bond force coefficients are
+omitted from this analysis-only projection; no force evaluation or dynamics is
+performed. Existing C++ calculations and pinned vendor sources are unchanged.
+Both generalized NP metadata and the original 32-NP prototype are supported.
+The same adapter supports V22/V35 and generic linear/ring/star/grafted matrices.
+
+Read `analysis_scope.txt` before interpreting the native reports:
+
+- Chemical clusters, junctions, conversion, active/dangling/loop defects and
+  graph cycles refer to the matrix. NPs cannot become isolated polymer chains,
+  chemical sol, junctions or network defects.
+- `snapshot_statistics.tsv` and native basic reports describe the matrix.
+  Their density is **matrix mass divided by the full composite box volume**;
+  it is neither complete composite density nor an excluded-volume correction.
+- `composite_statistics.json` and `analysis.json` separately report actual
+  total and NP masses, NP weight percentage, particle counts and full-composite
+  density. Matrix component fractions in native tables retain their original
+  matrix-mass denominator. Chemical-cluster fractions exclude oil and NPs.
+- Instantaneous kinetic temperature uses matrix velocities and flexible matrix
+  degrees of freedom; constrained NP bead velocities are excluded.
+- Affine/phantom structural moduli retain the previous covalent-network
+  definition and full box volume. They do not predict NP reinforcement or
+  measured composite modulus.
+
+Z1 contour export excludes NPs. Standard Z1 input does not represent rigid
+particle obstacles, so automatic composite Z1 execution is blocked. The command
+above intentionally selects export-only mode: analyses 1–11 complete and
+analysis 12 is `not_run`, with overall `partial` and exit code 0. An optional
+`--composite-z1-matrix-only` flag permits an explicitly labeled diagnostic
+calculation without NP obstacles; those results cannot quantify NP-induced
+entanglement constraints. Existing oil/elastomer/coating Z1 behavior is retained.
+
+Image-flag warnings in a cured simulation still require review for unwrapped
+observables. Covalent chain reconstruction uses the existing bond-by-bond
+periodic algorithm, independent of the removed NPs. This extension covers bulk
+static basic/topology analysis; composite Part 2/Part 3 and trajectory analysis
+are not implemented.
 
 ## Twelve analyses
 
@@ -154,6 +211,21 @@ The manifest distinguishes export-only `partial` from all applicable analyses
 being complete.
 
 ## Limits and verification
+
+The 2026-10-15 NP composite test exposed an inherited limitation in the pinned
+topology engine's **directional self-image shortest paths**: edge image shifts
+are defined relative to minimum-image node separation, omitting the image shift
+of that separation itself. These directional paths must remain provisional
+until corrected and independently validated. The V22/32-NP matrix's saved edge
+tables give cycle-winding rank 1 under the native convention and rank 3 when
+geometric boundary shifts are restored. Do not interpret the native x/y
+unreachable results as absence of periodic spanning. Conversion, ordinary
+chemical/reduced connectivity, defect counts and ordinary graph cycle rank do
+not use this directional-path calculation. Original native outputs are preserved
+for reproducibility; the local test record includes a separate quality review.
+New composite manifests record this qualification under
+`quality.directional_periodic_paths`, alongside a warning; the native tables
+remain unchanged.
 
 These are static snapshot measurements. No trajectory or additional physical
 MD time is required for the twelve analyses. Z1+ is an additional computation.

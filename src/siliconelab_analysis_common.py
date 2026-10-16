@@ -75,6 +75,8 @@ def invoke(command, out):
 
 def metadata(info, geometry=None):
     source = json.loads(Path(info).read_text())
+    if source.get("format") in ("siliconelab-composite-info", "siliconelab-np-coating-info"):
+        raise ValueError("Composite Part 2/Part 3 analysis is unsupported; use the static analyzer for matrix basic/topology analysis")
     return source, static_driver().normalize(source, geometry)
 
 

@@ -1,18 +1,29 @@
 # SiliconeLab
 
-A scientific workflow project for silicone oils, PDMS networks, and silicone coatings.
+A scientific workflow project for silicone oils, PDMS networks, coatings and NP composites.
 
 SiliconeLab provides a C++17 generator selected by `system = oil`, `elastomer`,
-or `coating` in a saved configuration. It reuses the original scientific
+`coating`, or `composite` in a saved configuration. It reuses the original scientific
 generators and writes a common run package with configuration and source records.
 
 The structural analyzer accepts an equilibrated data snapshot and its matching
-info file for oil, elastomer and V22/V35 coating systems. Generalized part 2
+info file for oil, elastomer, V22/V35 coating and bulk rigid-NP composite systems.
+Composite analysis preserves the existing matrix basic/topology calculations,
+with explicit NP exclusion and separate total-composite composition/density.
+Generalized part 2
 and part 3 analyzers cover spatial/dynamic and surface/mechanical properties,
 with explicit applicability and sampling checks. The four reference cases
 exercise the shared tools; future simulation batches belong under `runs/`.
 
 ## Generate a system
+
+The unified generator also prepares bulk NP composites with V22, V35 or generic
+PDMS elastomer matrices, configurable rigid FCC particle size/count, and
+independent repulsive or attractive NP pair interactions. See
+[composite configuration](docs/composites.md),
+[local recipes](examples/composites/) and
+[the composite workflow record](workflows/composites.json).
+The original material configurations retain their native generation paths.
 
 Build with a C++17 compiler and CMake 3.19 or newer:
 

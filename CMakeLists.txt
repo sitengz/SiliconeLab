@@ -23,6 +23,8 @@ add_executable(siliconelab_topology src/analysis/topology.cpp)
 install(TARGETS siliconelab_static siliconelab_topology RUNTIME DESTINATION bin)
 configure_file(src/siliconelab_analyzer.py siliconelab_analyzer COPYONLY)
 install(PROGRAMS src/siliconelab_analyzer.py DESTINATION bin RENAME siliconelab_analyzer)
+configure_file(src/siliconelab_composite_analysis.py siliconelab_composite_analysis.py COPYONLY)
+install(FILES src/siliconelab_composite_analysis.py DESTINATION bin)
 
 add_executable(siliconelab_spatial_dynamics src/analysis/spatial_dynamics.cpp)
 add_executable(siliconelab_profiles src/analysis/profiles.cpp)
@@ -42,6 +44,17 @@ install(FILES vendor/Silicone_Oil/Analysis/atsc4i.py DESTINATION bin RENAME sili
 include(CTest)
 if(BUILD_TESTING)
     find_package(Python3 COMPONENTS Interpreter REQUIRED)
+    add_test(NAME composite_generator_contract
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_composites.py"
+        --generator $<TARGET_FILE:siliconelab_generator>)
+    add_test(NAME composite_analyzer_contract
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_composite_analyzer.py"
+        --generator $<TARGET_FILE:siliconelab_generator>
+        --driver "${CMAKE_CURRENT_SOURCE_DIR}/src/siliconelab_analyzer.py"
+        --backend-dir $<TARGET_FILE_DIR:siliconelab_static>)
+    add_test(NAME nanoparticle_generator_contract
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_np_coating.py"
+        --generator $<TARGET_FILE:siliconelab_generator>)
     add_test(NAME film_workflow_contract
         COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_film_workflow.py")
     add_test(NAME extended_analyzer_contract

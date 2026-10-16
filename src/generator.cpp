@@ -3,12 +3,14 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "source_versions.hpp"
+#include "composite.hpp"
 #include "../vendor/Silicone_Oil/Generator/config_input.hpp"
 
 int siliconelab_oil_main(int, char**);
@@ -109,7 +111,7 @@ std::vector<std::string> reset_surface_momentum(const fs::path& directory,
 void write_manifest(const fs::path& directory, const fs::path& config,
                     const std::string& system, const std::string& model,
                     const Backend& selected, const std::string& data_name,
-                    const std::vector<std::string>& momentum_inputs) {
+                    const std::vector<std::string>& momentum_inputs,const std::string& base) {
     std::vector<std::string> files;
     for (const auto& entry : fs::directory_iterator(directory))
         if (entry.is_regular_file()) files.push_back(entry.path().filename().string());
@@ -122,6 +124,11 @@ void write_manifest(const fs::path& directory, const fs::path& config,
     text += ",\n  \"request_config\": \"request.conf\",\n  \"backend_config\": \"generator.conf\",";
     text += "\n  \"data_file\": " + json_quote(data_name);
     text += ",\n  \"info_file\": " + json_quote(directory.filename().string() + ".info");
+    if (fs::is_regular_file(directory / "nanoparticles.json")) {
+        text += ",\n  \"series\": \"composite\",\n  \"composite_file\": \"composite.json\",\n  \"nanoparticles_file\": \"nanoparticles.json\",\n  \"np_template_file\": \"np-template.csv\"";
+        text += ",\n  \"base\": "+json_quote(base)+",\n  \"matrix_system\": "+json_quote(base=="elastomer"?"elastomer":"coating");
+        text += ",\n  \"matrix_model\": "+(base=="elastomer"?std::string("null"):json_quote(base));
+    }
     text += ",\n  \"upstream\": {\n    \"repository\": " + json_quote(selected.repository);
     text += ",\n    \"commit\": " + json_quote(selected.commit) + "\n  },\n";
     text += "  \"surface_momentum_reset\": {\"command\": \"velocity all zero linear\", ";
@@ -137,7 +144,9 @@ void write_manifest(const fs::path& directory, const fs::path& config,
 
 int generate(const fs::path& requested_config) {
     const fs::path config = fs::absolute(requested_config).lexically_normal();
-    std::string system, model, output_dir;
+    std::string system, model, base, output_dir;
+    siliconelab_composite::Options np;
+    std::set<std::string> np_keys;
     std::vector<Entry> details;
     silicone_config::read_config_file(config.string(), [&](const std::string& option, const std::string& value) {
         const auto set_once = [&](std::string& field) {
@@ -146,14 +155,33 @@ int generate(const fs::path& requested_config) {
         };
         if (option == "--system") set_once(system);
         else if (option == "--model") set_once(model);
+        else if (option == "--base") set_once(base);
         else if (option == "--output-dir") set_once(output_dir);
+        else if (option.rfind("--np-", 0) == 0) {
+            if (!np_keys.insert(option).second) throw std::runtime_error("Duplicate NP setting: " + option);
+            siliconelab_composite::option(np, option, value);
+        }
         else if (option == "--output")
             throw std::runtime_error("Use output_dir for the common run directory instead of output");
         else if (option == "--config" || option == "--help")
             throw std::runtime_error("Reserved setting: " + option);
         else details.emplace_back(option.substr(2), value);
     });
-    const auto selected = backend(system, model);
+    std::string matrix_system=system, matrix_model=model;
+    if(system=="composite") {
+        if(!model.empty()) throw std::runtime_error("Composite configs select base, not model");
+        if(base=="v22" || base=="v35") {matrix_system="coating";matrix_model=base;}
+        else if(base=="elastomer") {matrix_system="elastomer";matrix_model.clear();}
+        else throw std::runtime_error("Composite requires base = v22, v35, or elastomer");
+        np.supplied=true;
+    } else if(!base.empty()) throw std::runtime_error("base is only supported for system = composite");
+    const auto selected = backend(matrix_system, matrix_model);
+    if(np.supplied) {
+        if(matrix_system!="coating" && matrix_system!="elastomer")
+            throw std::runtime_error("NP composites require a v22, v35, or elastomer matrix");
+        siliconelab_composite::resolve(np);
+        if(base.empty()) base=matrix_system=="elastomer"?"elastomer":matrix_model;
+    }
     if (output_dir.empty()) throw std::runtime_error("Missing required output_dir setting");
     fs::path directory(output_dir);
     if (directory.is_relative()) directory = config.parent_path() / directory;
@@ -170,7 +198,7 @@ int generate(const fs::path& requested_config) {
         throw std::runtime_error("Output paths cannot contain # or line breaks (native config format)");
     const std::string data_name = "data." + name;
     // Native oil writes beside the data path; network/coating add the case name.
-    const fs::path native_output = (system == "oil" ? directory : directory.parent_path()) / data_name;
+    const fs::path native_output = (matrix_system == "oil" ? directory : directory.parent_path()) / data_name;
     std::string native_config = "# SiliconeLab backend configuration; defaults remain upstream defaults.\n";
     for (const auto& entry : details)
         native_config += entry.first + " = \"" + entry.second + "\"\n";
@@ -186,8 +214,9 @@ int generate(const fs::path& requested_config) {
         if (code != 0) throw std::runtime_error("Selected generator failed; no run package was retained");
         if (!fs::is_regular_file(directory / data_name))
             throw std::runtime_error("Selected generator did not produce the expected data file");
+        if (np.supplied) siliconelab_composite::apply(directory, np, base);
         const auto momentum_inputs = reset_surface_momentum(directory, system);
-        write_manifest(directory, config, system, model, selected, data_name, momentum_inputs);
+        write_manifest(directory, config, system, model, selected, data_name, momentum_inputs,base);
     } catch (...) {
         // This directory was exclusively created by this call; preexisting runs
         // are rejected above and can never be removed by failure cleanup.
@@ -202,23 +231,49 @@ int generate(const fs::path& requested_config) {
 
 void help() {
     std::cout << "Usage: siliconelab_generator --config FILE\n"
-        "       siliconelab_generator --help [oil|elastomer|coating-v22|coating-v35]\n\n"
+        "       siliconelab_generator --help [oil|elastomer|coating-v22|coating-v35|composite]\n"
+        "       siliconelab_generator --capabilities\n\n"
         "Config format: key = value (comments start with #).\n"
         "Required common settings:\n"
-        "  system = oil | elastomer | coating\n"
+        "  system = oil | elastomer | coating | composite\n"
         "  output_dir = PATH   new run directory; relative to the config file\n"
-        "  model = v22 | v35   required only for coating\n\n"
+        "  model = v22 | v35   required only for coating\n"
+        "  base = v22 | v35 | elastomer   required only for composite\n\n"
         "Detailed settings use the selected upstream generator's keys and defaults.\n"
+        "Composites combine native matrix settings with NP settings; see --help composite.\n"
+        "Existing coating/elastomer configs may also opt in with np_count.\n"
         "See --help SYSTEM for native options; use output_dir instead of output.\n"
         "Generation writes LAMMPS inputs and templates. It does not run or submit MD.\n";
+}
+void composite_help() {
+    std::cout<<"Composite selection: system = composite; base = v22 | v35 | elastomer\n"
+        "Keep the selected base's native scientific keys; output_dir must be new.\n"
+        "Periodic bulk only. Representation: rigid_fcc (radius locates bead centers).\n"
+        "Required: np_count (1..512)\n"
+        "Geometry: np_radius=30 A; np_spacing=2^(1/6)*np_sigma; np_seed=20261014\n"
+        "Beads: np_sigma=6.44584366 A; np_epsilon=1.01287845 kcal/mol; np_bead_mass=74 g/mol\n"
+        "Pairs: np_interaction=wca|lj (default wca); override independently with\n"
+        "  np_np_interaction, np_matrix_interaction; optional np_np_epsilon,\n"
+        "  np_matrix_epsilon, np_matrix_sigma (explicit uniform matrix pair overrides).\n"
+        "LJ only: np_np_cutoff, np_matrix_cutoff in A (default 2.5*sigma).\n"
+        "WCA cutoff is fixed at 2^(1/6)*sigma. All NP parameters stay fixed through stages.\n"
+        "Packing: np_packing_min_distance=4.5 A (intermolecular matrix beads).\n"
+        "Outputs: native matrix snapshot in precursor/, composite data/input,\n"
+        "  composite.json, nanoparticles.json, canonical np-template.csv, run manifest.\n"
+        "Composite static analysis supports the matrix network; see docs/analyzer.md. Generation never submits jobs.\n";
+}
+void capabilities() {
+    std::cout<<R"({"schema_version":1,"systems":["oil","elastomer","coating","composite"],"composite":{"bases":["v22","v35","elastomer"],"geometry":["bulk"],"representations":["rigid_fcc"],"pair_models":["wca","lj"],"independent_pair_channels":["np_np","np_matrix"],"elastomer_architectures":["linear","ring","star","grafted"],"coating_oil_additives":true,"np_count_limits":[1,512],"total_bead_limit":2000000,"analysis_supported":true,"analysis_scope":"bulk matrix basic/topology and composite composition/density","np_obstacle_primitive_paths_supported":false,"dynamics_analysis_supported":false},"units":{"length":"angstrom","energy":"kcal/mol","mass":"g/mol"},"side_effects":{"runs_md":false,"submits_jobs":false,"publishes":false}})"<<'\n';
 }
 } // namespace
 
 int main(int argc, char** argv) {
     try {
+        if (argc == 2 && std::string(argv[1]) == "--capabilities") {capabilities();return 0;}
         if (argc == 2 && std::string(argv[1]) == "--help") { help(); return 0; }
         if (argc == 3 && std::string(argv[1]) == "--help") {
             const std::string choice = argv[2];
+            if(choice=="composite") {composite_help();return 0;}
             const auto selected = choice == "coating-v22" ? backend("coating", "v22")
                 : choice == "coating-v35" ? backend("coating", "v35") : backend(choice, "");
             return invoke(selected.run, {"siliconelab_generator", "--help"});

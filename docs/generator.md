@@ -1,11 +1,16 @@
 # Generator configuration reference
 
-SiliconeLab prepares three classes of systems through one C++ executable:
+SiliconeLab prepares four classes of systems through one C++ executable:
 `siliconelab_generator --config FILE`. This reference lists **every supported
 configuration key** in the imported generators, including defaults, units,
 valid choices, dependencies, derived quantities, and the existing upstream case
 families. The small files in `examples/` are runnable preparation checks; they
 are only a subset of this configuration space.
+
+The composite layer and its complete NP settings are documented in
+[Unified bulk composite generation](composites.md). Native oil, elastomer and
+coating settings below retain their original meaning; composites forward the
+selected matrix's native settings and add independent NP configuration.
 
 The reference describes the versions pinned in `upstream.json`. Backend defaults
 are not the values in an upstream `model.conf`: a saved configuration can
@@ -32,6 +37,7 @@ default. “Unset” below means omit the key, rather than write an empty value.
 | `system = elastomer` | PDMS network precursors with linear, ring, star, or grafted strands and functional crosslinkers. | Functional-group stoichiometry; optional five-bead moderators and neutral PDMS filler; optional conversion-controlled curing. | Bulk or a directly generated wall-bounded film; main preparation input and final MSD sampling. |
 | `system = coating`, `model = v22` | Straight, bifunctional PDMS strands; V22 formulation and reaction defaults. | No oil, PDMS, PMPS, or copolymer oil at a specified formulation weight fraction; optional moderators. | Bulk precursor or a directly generated film; films also get a dependent surface-measurement input. |
 | `system = coating`, `model = v35` | Folded, bifunctional PDMS strands; V35 formulation and reaction defaults. | Same oil chemistry and loading controls as V22. | Same workflow choices as V22, with different strand geometry and placement capacity. |
+| `system = composite`, `base = v22`, `v35` or `elastomer` | The selected native matrix plus rigid FCC colloids. | Native matrix formulation, independent NP count/radius/mass and NP–NP/NP–matrix WCA or attractive LJ. | Periodic bulk; composite data/input, canonical NP coordinates and resolved composite metadata. |
 
 Selecting `coating` alone does not select a film: omit `thickness` for a bulk
 precursor, or supply a positive `thickness` for a film. Neither network generator
@@ -61,12 +67,15 @@ oil_wt = 10
 
 | Key or command | Type / choices | Default | Meaning |
 | --- | --- | --- | --- |
-| `system` | `oil`, `elastomer`, `coating` | Required | Selects the scientific backend. Values are lowercase and case-sensitive. |
+| `system` | `oil`, `elastomer`, `coating`, `composite` | Required | Selects the material family. Values are lowercase and case-sensitive. |
 | `model` | `v22`, `v35` | Required for coating | Selects the coating formulation. Rejected for oil and elastomer. |
+| `base` | `v22`, `v35`, `elastomer` | Required for composite | Selects the matrix backend; use instead of `model`. |
 | `output_dir` | Directory path | Required | New directory containing the complete run package. A relative path resolves beside the user's config file. |
 | `--config FILE` | Command-line argument | Required for generation | Loads the common configuration; the file path resolves from the current working directory. |
 | `--help` | Command-line argument | — | Shows the common interface. |
 | `--help oil`, `--help elastomer`, `--help coating-v22`, `--help coating-v35` | Command-line arguments | — | Show the native scientific parameter help. |
+| `--help composite` | Command-line argument | — | Shows composite selection and complete NP settings/defaults. |
+| `--capabilities` | Command-line argument | — | Prints machine-readable family/base/NP-model discovery for agents. |
 
 The common executable accepts `--config FILE` or the help commands above. It
 currently does **not** accept scientific command-line overrides such as
