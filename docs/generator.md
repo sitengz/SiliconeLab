@@ -71,6 +71,8 @@ oil_wt = 10
 | `model` | `v22`, `v35` | Required for coating | Selects the coating formulation. Rejected for oil and elastomer. |
 | `base` | `v22`, `v35`, `elastomer` | Required for composite | Selects the matrix backend; use instead of `model`. |
 | `output_dir` | Directory path | Required | New directory containing the complete run package. A relative path resolves beside the user's config file. |
+| `tensile_erate` | Positive finite number, fs⁻¹ | Omitted | Records the engineering strain rate for the bulk tensile workflow; supply together with `tensile_strain`. |
+| `tensile_strain` | Positive finite number, dimensionless | Omitted | Records the target engineering strain for the bulk tensile workflow; `1` means 100%. Supply together with `tensile_erate`. These keys record a protocol; generation itself does not run or submit tensile jobs. |
 | `--config FILE` | Command-line argument | Required for generation | Loads the common configuration; the file path resolves from the current working directory. |
 | `--help` | Command-line argument | — | Shows the common interface. |
 | `--help oil`, `--help elastomer`, `--help coating-v22`, `--help coating-v35` | Command-line arguments | — | Show the native scientific parameter help. |

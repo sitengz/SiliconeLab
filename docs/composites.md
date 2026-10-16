@@ -134,6 +134,7 @@ constituent-bead contact distance.
 | Key | Default | Meaning |
 |---|---|---|
 | `np_interaction` | `wca` | Both channels: `wca`, `lj`, or stage-matched `native_pdms`. |
+| `np_lambda` | `1` | Positive finite, dimensionless epsilon multiplier for both NP–NP and NP–matrix pairs in `native_pdms` mode. Values other than `1` require that mode. |
 | `np_np_interaction` | Inherits `np_interaction` | NP–NP constituent pairs. |
 | `np_matrix_interaction` | Inherits `np_interaction` | NP pairs with every matrix type, including oil constituents. |
 | `np_np_epsilon` | `np_epsilon` | Optional independent NP–NP well depth. |
@@ -142,7 +143,10 @@ constituent-bead contact distance.
 | `np_np_cutoff` | `2.5*sigma` for LJ | Explicit angstrom cutoff for NP–NP LJ. Rejected for WCA. |
 | `np_matrix_cutoff` | `2.5*sigma` per pair for LJ | Explicit uniform angstrom cutoff for NP–matrix LJ. Rejected for WCA. |
 
-Explicit channel choices override `np_interaction` regardless of config order.
+For `wca` and `lj`, explicit channel choices override `np_interaction` regardless
+of config order. `native_pdms` rejects independent pair-channel or force-parameter
+overrides; use `np_lambda` to scale both channels while inheriting each native
+stage's sigma, potential and cutoffs.
 WCA uses an energy-shifted LJ potential cut at `2^(1/6)*sigma`; it is purely
 repulsive and reaches zero energy and force at the cutoff. LJ includes the
 attractive tail and shifts energy to zero at its cutoff; an explicit LJ cutoff
