@@ -111,7 +111,7 @@ class CompositeAnalyzerTests(unittest.TestCase):
         self.assertTrue(all(int(r["backbone_beads"]) == 4 for r in rows))
         self.assertEqual(sum(int(r["beads"]) for r in rows), meta["precursor_info"]["components"]["silicone_oil_filler"]["beads"])
 
-    def test_composite_part2_part3_metadata_is_explicitly_unsupported(self):
+    def test_composite_legacy_metadata_requires_explicit_interface_configuration(self):
         _, info = self.generate()
         spec = importlib.util.spec_from_file_location(
             "composite_analysis_common", ARGS.driver.parent / "siliconelab_analysis_common.py")
@@ -121,7 +121,7 @@ class CompositeAnalyzerTests(unittest.TestCase):
         for fmt in ("siliconelab-composite-info", "siliconelab-np-coating-info"):
             meta["format"] = fmt
             info.write_text(json.dumps(meta))
-            with self.assertRaisesRegex(ValueError, "Composite Part 2/Part 3 analysis is unsupported"):
+            with self.assertRaisesRegex(ValueError, "Composite analysis requires the saved NP interface configuration"):
                 common.metadata(info)
 
     def test_known_reacted_graph_ignores_np_and_preserves_topology(self):

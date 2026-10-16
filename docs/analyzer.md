@@ -112,9 +112,11 @@ entanglement constraints. Existing oil/elastomer/coating Z1 behavior is retained
 
 Image-flag warnings in a cured simulation still require review for unwrapped
 observables. Covalent chain reconstruction uses the existing bond-by-bond
-periodic algorithm, independent of the removed NPs. This extension covers bulk
-static basic/topology analysis; composite Part 2/Part 3 and trajectory analysis
-are not implemented.
+periodic algorithm, independent of the removed NPs. Bulk NP-distance structural,
+trajectory and tensile analyses are available through the explicit configuration
+mode in [the NP interface guide](np-interface-analysis.md). These analyses preserve
+the distinction between covalent-network defects and NP-induced entanglements;
+NP-obstacle primitive paths remain unsupported.
 
 ## Twelve analyses
 

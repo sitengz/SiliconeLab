@@ -76,7 +76,7 @@ def invoke(command, out):
 def metadata(info, geometry=None):
     source = json.loads(Path(info).read_text())
     if source.get("format") in ("siliconelab-composite-info", "siliconelab-np-coating-info"):
-        raise ValueError("Composite Part 2/Part 3 analysis is unsupported; use the static analyzer for matrix basic/topology analysis")
+        raise ValueError("Composite analysis requires the saved NP interface configuration: use Part 2/Part 3 --config FILE; planar film algorithms do not apply to bulk NP interfaces")
     return source, static_driver().normalize(source, geometry)
 
 
