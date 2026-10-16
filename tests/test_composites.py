@@ -125,6 +125,17 @@ class CompositeContracts(unittest.TestCase):
                     self.assertGreater(cut,2**(1/6)*sigma)
                     self.assertLess(u(min(1.5*sigma,(cut+2**(1/6)*sigma)/2)),0)
         record=json.loads((run/'siliconelab.json').read_text())
+        # Composite packages retain the shared filenames and native log template.
+        self.assertEqual(record['data_file'],'data.'+run.name)
+        self.assertEqual(record['info_file'],run.name+'.info')
+        common={'data.'+run.name,'in.'+run.name,'submit.'+run.name+'.sh',run.name+'.info',
+                'request.conf','generator.conf','siliconelab.json'}
+        self.assertTrue(common.issubset({p.name for p in run.iterdir() if p.is_file()}))
+        submit=(run/('submit.'+run.name+'.sh')).read_text()
+        self.assertIn("INPUT='in."+run.name+"'",submit)
+        self.assertIn("OUTPUT='out."+run.name+"'",submit)
+        self.assertIn('#SBATCH --output=slurm-%j.out',submit)
+        self.assertIn('#SBATCH --error=slurm-%j.err',submit)
         self.assertEqual(record['base'],meta['base'])
         self.assertEqual(record['series'],'composite')
         self.assertEqual(record['matrix_system'],meta['matrix_system'])

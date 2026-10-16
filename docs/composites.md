@@ -13,8 +13,48 @@ cmake --build build --parallel 4
 `system = oil`, `elastomer`, and `coating` retain their native settings and
 workflows, including films. `system = composite` adds a shared nanoparticle
 layer to a selected **periodic bulk** matrix. Composite films are deferred as
-requested. This extension is local while the user tests the composite sample;
-generation does not execute MD, submit jobs or publish anything.
+requested. The validated NP extension uses the shared generator and static
+analyzer. Generation does not execute MD, submit jobs or publish anything.
+
+## Shared file, folder and logging conventions
+
+Composite cases follow the same conventions as oil, elastomer and coating
+cases. Use the [existing batch layout](../README.md#shared-software-and-future-runs)
+for new work: `runs/<batch>/<case>/configs/model.conf`, `generated/`, applicable
+stage folders such as `tensile-x/`, `tensile-y/`, `tensile-z/`, and
+`analysis/part1/` for supported static analysis. Batch plans and execution state
+remain `workflow.json` and `workflow-state.json`. This is the existing directory
+convention, not an additional NP orchestration API.
+
+The generated package keeps `data.<case>`, `in.<case>`, `submit.<case>.sh`,
+`<case>.info`, `request.conf`, `generator.conf` and `siliconelab.json`. The NP
+metadata/template and preserved `precursor/` files are additions to that common
+package. Native simulation output names and checkpoint/stage suffixes are
+retained. The static analyzer keeps `analysis.json`, `analysis.log`,
+`analysis_report.txt`, `source.info`, `normalized_info.json` and the existing
+scientific table names. Select the batch's `analysis/part1/` using `--output-dir`;
+without it, the shared CLI default remains `analysis_<case>`.
+
+Use the existing stage launcher and cluster profile for execution and logging.
+Generated `submit.<case>.sh` files remain native submission templates, as for
+the other systems; generation does not install a Nova-specific logger into them.
+Workflow-managed launchers retain their established names (`submit.sbatch` for
+simulation stages and `analyze.sbatch` for analysis jobs). Submit from the job's
+own folder and keep full scheduler stdout/stderr, LAMMPS output and analyzer
+logs there, using the same job-ID naming as the selected launcher. Workflow
+stage completion/provenance remains `stage-result.json`.
+
+On Nova, source the existing `nova-logging.sh` helper and use `nova_run` with a
+readable purpose and concise summary. Central dated activity logs remain under
+`/work/wxia/siteng/log/`; full output stays in the corresponding job folder.
+Use saved scripts for routine checks, preserve existing log text, and keep
+credentials, encoded transfer payloads and long inline source out of the central
+activity log. NP cases do not introduce a second logging scheme.
+
+Historical prototype/test directories are preserved with their original paths,
+outputs and job records. Their ad hoc layout is not the convention for future
+production batches. Existing oil/elastomer/coating cases are not renamed, and
+unsupported composite stages are not enabled by adopting the common layout.
 
 ## Choose the matrix
 

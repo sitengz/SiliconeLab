@@ -72,6 +72,11 @@ class CompositeAnalyzerTests(unittest.TestCase):
                 precursor = self.root / "matrix.info"
                 precursor.write_text(json.dumps(json.loads(info.read_text())["precursor_info"]))
                 _, baseline = self.analyze(out / "matrix.data", precursor, name="baseline")
+                # NP-specific records supplement the existing analyzer package.
+                legacy_files = {p.name for p in baseline.iterdir() if p.is_file()}
+                self.assertTrue(legacy_files.issubset({p.name for p in out.iterdir() if p.is_file()}))
+                self.assertTrue({'analysis.json', 'analysis.log', 'analysis_report.txt',
+                                 'normalized_info.json', 'source.info'}.issubset(legacy_files))
                 for name in ("snapshot_statistics.tsv", "chemical_network_statistics.tsv",
                              "network_statistics.case.tsv", "strand_properties.case.tsv",
                              "effective_strands.case.tsv", "network_nodes.case.tsv",
