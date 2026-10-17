@@ -394,6 +394,37 @@ class InterfaceTests(unittest.TestCase):
         c = self.configuration(rigidity_tolerance_A=0.04)
         self.assertEqual(c["rigidity_tolerance_A"], 0.04)
 
+    def test_final_np_geometry_matches_ids_after_row_permutation_and_pbc_rotation(self):
+        info = dict(total_beads=5, np_atom_type=6, np_count=1, beads_per_np=4)
+        source = np.array(
+            [[10.0, 10, 10], [11.0, 10, 10], [10.0, 12, 10], [10.0, 10, 13]]
+        )
+        rotation = np.array([[1.0, 0, 0], [0.0, 0, -1], [0.0, 1, 0]])
+        final = (source - 10) @ rotation.T + [39.5, 10, 10]
+
+        def write(path, positions, order):
+            rows = {1: "1 1 1 0 5 5 5 0 0 0"}
+            for ident, xyz in enumerate(positions, 2):
+                wrapped = xyz % 40
+                image = np.floor(xyz / 40).astype(int)
+                rows[ident] = f"{ident} 2 6 0 " + " ".join(map(str, [*wrapped, *image]))
+            path.write_text(
+                "LAMMPS data\n\n5 atoms\n2 atom types\n0 40 xlo xhi\n0 40 ylo yhi\n0 40 zlo zhi\n\nAtoms # full\n\n"
+                + "\n".join(rows[i] for i in order)
+                + "\n"
+            )
+
+        a, b = self.root / "source.data", self.root / "final.data"
+        write(a, source, [1, 2, 3, 4, 5])
+        write(b, final, [5, 1, 3, 2, 4])
+        reference = np.array(d.np_geometry(a, info)[2])
+        np.testing.assert_allclose(d.np_geometry(b, info)[2], reference, atol=1e-12)
+        final[2, 1] += 0.2
+        write(b, final, [3, 4, 1, 5, 2])
+        self.assertGreater(
+            float(np.max(np.abs(np.array(d.np_geometry(b, info)[2]) - reference))), 0.02
+        )
+
     def test_added_dynamics_preserves_cold_header_and_validates_sampling(self):
         request = self.root / "dynamics.json"
         request.write_text(

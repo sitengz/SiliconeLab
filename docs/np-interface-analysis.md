@@ -175,3 +175,8 @@ per-frame distances in `rigidity_checks.tsv`, offending steps and source hash in
 `sampling.json`, and no deformation profiles. Independently validated equilibrium,
 final-snapshot, dynamics and bulk stress-table analyses continue. The analyzer
 does not repair coordinates or relax the configured tolerance automatically.
+
+Final NP rigid-body validation matches constituent atom IDs before comparing
+anchor distances. LAMMPS data-file row reordering, rigid translation/rotation and
+consistent periodic image changes do not count as changes of NP shape. Pinned
+executors and failed contracts remain preserved when validation is repaired.

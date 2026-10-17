@@ -287,6 +287,10 @@ def np_geometry(path, info):
         or any(len(g) != info["beads_per_np"] for g in groups.values())
     ):
         raise ValueError("Final snapshot/NP identity contract failed")
+    # LAMMPS write_data emits processor/spatial atom order, which can change.
+    # Anchor identities and comparison positions must follow stable atom IDs.
+    for rows in groups.values():
+        rows.sort(key=lambda row: row[0])
     return {
         mol: [math.dist(anchor[1], r[1]) for anchor in rows[:4] for r in rows]
         for mol, rows in groups.items()
